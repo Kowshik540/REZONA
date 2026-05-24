@@ -114,35 +114,47 @@ app.use('/api/admin', require('./routes/admin'));
 
 // ─── Serve React build in production ──────────────────────────────────────────
 if (process.env.NODE_ENV === 'production') {
-  // Try multiple possible paths for the client build
-  const possiblePaths = [
-    path.join(__dirname, '../client/build'),
-    path.join(__dirname, 'public'),
-    path.join(__dirname, '../public'),
-  ];
+  const fs = require('fs');
+  const clientBuild = path.join(__dirname, '../client/build');
   
-  let clientBuild = null;
-  for (const p of possiblePaths) {
-    if (require('fs').existsSync(p)) { clientBuild = p; break; }
-  }
-  
-  if (clientBuild) {
-    logger.info('Serving static files from: ' + clientBuild);
-    app.use(express.static(clientBuild, { 
-      maxAge: '1d',
-      setHeaders: (res, filePath) => {
-        if (filePath.endsWith('.js')) res.setHeader('Content-Type', 'application/javascript');
-        if (filePath.endsWith('.css')) res.setHeader('Content-Type', 'text/css');
+  // Debug: log what's in the build folder
+  if (fs.existsSync(clientBuild)) {
+    logger.info('Build folder found at: ' + clientBuild);
+    try {
+      const files = fs.readdirSync(clientBuild);
+      logger.info('Build contents: ' + files.join(', '));
+      if (fs.existsSync(path.join(clientBuild, 'static'))) {
+        const staticFiles = fs.readdirSync(path.join(clientBuild, 'static'));
+        logger.info('Static folder: ' + staticFiles.join(', '));
       }
-    }));
-    // SPA fallback — only for non-API, non-static-file requests
+    } catch(e) {}
+    
+    // Serve static files FIRST with correct MIME types
+    app.use(express.static(clientBuild));
+    
+    // SPA fallback — only for page routes, not files
     app.get('*', (req, res, next) => {
+      // Skip API routes
       if (req.path.startsWith('/api')) return next();
-      if (req.path.match(/\.(js|css|map|ico|png|jpg|svg|json|txt|xml)$/)) return next();
+      // Skip file requests (they should have been handled by express.static above)
+      if (req.path.includes('.')) return next();
+      // Everything else gets index.html (SPA routing)
       res.sendFile(path.join(clientBuild, 'index.html'));
     });
   } else {
-    logger.warn('No client build found. Frontend will not be served.');
+    logger.warn('Build folder NOT found at: ' + clientBuild);
+    // Try alternate path
+    const altPath = path.join(__dirname, 'build');
+    if (fs.existsSync(altPath)) {
+      logger.info('Found build at alternate path: ' + altPath);
+      app.use(express.static(altPath));
+      app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api') || req.path.includes('.')) return next();
+        res.sendFile(path.join(altPath, 'index.html'));
+      });
+    } else {
+      logger.warn('No client build found anywhere.');
+    }
   }
 }
 
