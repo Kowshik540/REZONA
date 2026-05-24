@@ -228,7 +228,7 @@ const Pricing = () => {
         {success && <div style={{ background: '#064e3b', color: '#6ee7b7', padding: '12px 20px', borderRadius: 8, marginBottom: 20 }}>{success}</div>}
 
         {/* Plan Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, textAlign: 'left' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, textAlign: 'left', padding: '0 8px' }}>
           {PLANS.map(plan => {
             const price = billing === 'monthly' ? plan.price.monthly : plan.price.yearly;
             const isActive = currentPlan === plan.id;
