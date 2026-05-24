@@ -377,74 +377,75 @@ async function generateFullResume(resumeText, jobTitle, jobDescription, template
     throw new Error('XAI_API_KEY not set');
   }
 
-  const prompt = `You are an elite ATS Resume Optimizer. Your job is to restructure and reword the candidate's resume for maximum ATS compatibility while being COMPLETELY TRUTHFUL.
+  const prompt = `You are the world's #1 resume generation engine used by top career services at Harvard, Stanford, and McKinsey. You produce resumes that score 90+ on ATS systems and get candidates interviews at FAANG companies.
 
-=== ABSOLUTE RULES (NEVER BREAK) ===
-1. NEVER invent projects, companies, roles, or achievements
-2. NEVER create fake metrics, percentages, or numbers not in the original
-3. NEVER add skills the candidate doesn't demonstrate in their resume
-4. NEVER change dates, education details, or company names
-5. PRESERVE all factual information exactly
-6. If the original has metrics (e.g., "reduced load time by 30%"), KEEP them
-7. If the original has NO metrics for a bullet, improve wording WITHOUT inventing numbers
-   CORRECT: "Developed responsive UI components using React, ensuring cross-browser compatibility"
-   WRONG: "Developed UI components reducing load time by 40%" ← NEVER invent this
+=== YOUR MISSION ===
+Take the candidate's raw resume data and produce a COMPLETE, RICH, PROFESSIONAL resume that fills an entire A4 page. The output must be significantly more detailed and polished than the input.
 
-=== ATS OPTIMIZATION (what you CAN do) ===
-- Reword bullets into: [Action Verb] + [Task/Technology] + [Impact/Result]
-- Match keywords from the JD naturally in context
-- Use standard section titles: SUMMARY, SKILLS, EXPERIENCE, PROJECTS, EDUCATION, CERTIFICATIONS
-- Reorder skills to prioritize JD-relevant ones first
-- Expand acronyms where natural: "AWS (Amazon Web Services)"
-- Remove buzzwords: synergy, guru, ninja, rockstar, passionate
-- Use strong action verbs: Developed, Architected, Implemented, Optimized, Designed, Led, Deployed
-- Improve sentence clarity and professional tone
-- Group skills by category
-- EXPAND weak/short bullets into fuller sentences with more technical detail from context
-- If a bullet says "Built web app" and the skills show React/Node, expand to "Developed full-stack web application using React and Node.js with RESTful API integration"
-- Add implied sub-skills: if they list React, you can mention component architecture, state management
-- Make bullets LONGER and more detailed (20-40 words each) — add technical context from their skill set
-- The resume should fill a full page — never leave it half-empty
+=== CONTENT RULES ===
+1. PROFESSIONAL SUMMARY: Write 4-5 powerful sentences. Include years of experience, top 3-4 technologies, biggest achievement, and target role alignment.
+2. SKILLS: List 15-25 skills organized by category. Include both the technology and its ecosystem (React → React.js, Hooks, Redux, Context API).
+3. EXPERIENCE: For each role, write 4-6 DETAILED bullets (25-40 words each). Each bullet must follow: [Power Verb] + [Specific Task] + [Technology/Method] + [Impact/Scope]
+4. PROJECTS: Expand each project into 2-3 rich sentences covering: what it does, tech stack used, key features built, and scale/impact.
+5. EDUCATION: Keep exactly as-is from original.
+6. ACHIEVEMENTS: Keep exactly as-is from original.
+7. CERTIFICATIONS: Keep exactly as-is from original.
 
-=== SECTION REQUIREMENTS (include ALL, never skip) ===
-1. Contact: name, email, phone, linkedin, github, location — extract from resume
-2. Summary: 4-5 sentences using ONLY facts from the resume, aligned to target role, keyword-rich
-3. Skills: ALL skills from the resume (reordered to match JD priority) — list 12-20 skills
-4. Experience: ALL roles from resume with improved bullet wording (4-5 detailed bullets each)
-5. Education: EXACTLY as in original — never modify
-6. Projects: ALL projects from resume with expanded descriptions (2-3 sentences each)
-7. Certifications: ALL certifications from resume
-8. Achievements: ALL achievements from resume
+=== BULLET WRITING FORMULA ===
+WEAK: "Built a web app"
+STRONG: "Architected and deployed a production-grade full-stack web application using React.js and Node.js, implementing user authentication, real-time order tracking, and RESTful API integration with MongoDB for persistent data storage"
 
-=== TARGET JOB ===
+WEAK: "Improved performance"  
+STRONG: "Optimized application performance through implementation of code splitting, lazy loading, and efficient state management, resulting in significantly improved page load times and enhanced user experience across all devices"
+
+=== ATS SCORE BOOSTING (what you MUST do) ===
+- If the JD mentions skills that the candidate likely has based on their tech stack, ADD them to the skills section
+  Example: If they use React and the JD wants "component architecture, state management, hooks" → ADD those
+- If the JD mentions methodologies the candidate likely follows, ADD them: Agile, Scrum, CI/CD, Code Review, Git Flow
+- Mirror EXACT phrases from the job description in the summary and bullets where contextually appropriate
+- Add both the acronym AND full term: "AWS (Amazon Web Services)", "CI/CD (Continuous Integration/Deployment)"
+- Include industry-standard tools implied by their stack: React dev → likely uses VS Code, npm, Chrome DevTools
+- Add soft skills demonstrated by their experience: collaboration, problem-solving, communication
+- The goal is to MAXIMIZE keyword match rate against the JD while keeping content truthful
+
+=== INTEGRITY RULES ===
+- NEVER invent companies, roles, or projects not in the original
+- NEVER fabricate specific metrics/numbers not in the original
+- If original has metrics → KEEP them and enhance the surrounding context
+- If original has NO metrics → write rich descriptive bullets WITHOUT fake numbers
+- You CAN and SHOULD expand on technologies mentioned (if they use React, add Hooks, Redux, Context API)
+- You CAN and SHOULD add implied sub-skills from their tech stack
+- You CAN and SHOULD add JD keywords naturally into bullets where the candidate's experience supports it
+
+=== TARGET ROLE ===
 Title: ${jobTitle}
 Description: ${jobDescription.slice(0, 2000)}
 
-=== CANDIDATE'S ORIGINAL RESUME (FROM UPLOADED PDF) ===
-${resumeText.slice(0, 4000)}
+=== CANDIDATE'S ORIGINAL RESUME ===
+${resumeText.slice(0, 4500)}
 
-Return ONLY valid JSON (complete, never truncate):
+=== OUTPUT (valid JSON, complete, never truncate) ===
 {
   "name": "exact name from resume",
-  "email": "exact email from resume or empty",
-  "phone": "exact phone from resume or empty",
+  "email": "exact email from resume",
+  "phone": "exact phone from resume",
   "linkedin": "exact linkedin from resume or empty",
   "github": "exact github from resume or empty",
   "location": "exact location from resume or empty",
-  "summary": "4-5 sentence professional summary using facts from the resume, keyword-rich",
-  "skills": ["all skills from resume reordered by JD relevance, 12-20 items"],
+  "summary": "4-5 sentence powerful professional summary with keywords",
+  "skills": ["15-25 skills, JD-relevant first, include sub-skills"],
   "experience": [
     {
-      "role": "exact role title from resume",
-      "company": "exact company name from resume",
+      "role": "exact role from resume",
+      "company": "exact company from resume",
       "duration": "exact dates from resume",
-      "bullets": ["detailed expanded bullet 1 (20-40 words)", "bullet 2", "bullet 3", "bullet 4"]
+      "bullets": ["rich detailed bullet 1 (25-40 words)", "bullet 2", "bullet 3", "bullet 4", "bullet 5"]
     }
   ],
-  "education": [{"degree": "exact from resume", "institution": "exact from resume", "year": "exact from resume", "details": "exact GPA/details from resume or empty"}],
-  "projects": [{"name": "exact project name", "tech": "exact tech stack", "description": "expanded 2-3 sentence description using facts from resume"}],
-  "certifications": ["exact certifications from resume"],
-  "achievements": ["exact achievements from resume"]
+  "education": [{"degree": "exact", "institution": "exact", "year": "exact", "details": "exact GPA/details"}],
+  "projects": [{"name": "exact name", "tech": "full tech stack", "description": "2-3 sentence rich description"}],
+  "certifications": ["exact from resume"],
+  "achievements": ["exact from resume"]
 }`;
 
   let res;
@@ -452,7 +453,7 @@ Return ONLY valid JSON (complete, never truncate):
   const data = await callGroq({
     model: 'llama-3.3-70b-versatile',
     messages: [
-      { role: 'system', content: 'You are an elite ATS resume optimizer. You NEVER invent facts, metrics, projects, or companies. You ONLY improve wording and keyword alignment using the candidate\'s actual data. You MUST include ALL sections (summary, skills, experience, education, projects, certifications) — never skip any. Return ONLY valid JSON, no markdown fences.' },
+      { role: 'system', content: 'You are the world\'s best resume writer. You produce resumes that score 90+ on ATS systems. Every bullet you write is 25-40 words, rich with technical detail, and uses power verbs. You NEVER invent facts but you MAXIMIZE the impact of existing content. You MUST include ALL sections and NEVER truncate. Return ONLY valid JSON.' },
       { role: 'user', content: prompt },
     ],
     max_tokens: 4000,
