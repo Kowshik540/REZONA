@@ -181,10 +181,12 @@ function analyzeHardSkills(resumeText, jobDescription = '') {
       issues.push('Your hard skills match rate is below 40%. Add relevant skills from the job description where truthful.');
     }
   } else {
-    // No JD provided — score based on skill count
-    score = Math.min(maxScore, Math.round(resumeSkills.length * 1.5));
-    if (resumeSkills.length >= 10) passes.push(`${resumeSkills.length} technical skills detected.`);
-    else issues.push(`Only ${resumeSkills.length} technical skills found. Aim for 10+ relevant skills.`);
+    // No JD provided — give minimal score (like Jobscan, you NEED a JD for real scoring)
+    // Cap at 40% of max since we can't measure match rate without a JD
+    score = Math.min(Math.round(maxScore * 0.4), Math.round(resumeSkills.length * 1.2));
+    if (resumeSkills.length >= 10) passes.push(`${resumeSkills.length} technical skills detected. Paste a job description for accurate match scoring.`);
+    else issues.push(`Only ${resumeSkills.length} technical skills found. Paste a job description to see your real match rate.`);
+    issues.push('No job description provided. Your match rate cannot be calculated without a target job. Paste a JD for accurate ATS scoring.');
   }
 
   // Skill frequency check
@@ -220,7 +222,7 @@ function analyzeSoftSkills(resumeText, jobDescription = '') {
     if (matched.length > 0) passes.push(`${matched.length}/${jdSoft.length} soft skills matched.`);
     if (missing.length > 0) issues.push(`Missing soft skills: ${missing.slice(0, 5).join(', ')}`);
   } else {
-    score = Math.min(maxScore, resumeSoft.length * 2);
+    score = Math.min(Math.round(maxScore * 0.35), resumeSoft.length * 2);
     if (resumeSoft.length >= 3) passes.push(`${resumeSoft.length} soft skills demonstrated.`);
     else issues.push('Add more soft skills naturally in your experience bullets (e.g., collaboration, leadership).');
   }
