@@ -10,6 +10,5 @@ server/uploads/*
 *.log
 npm-debug.log*
 coverage/
-build/
 dist/
 .DS_Store
