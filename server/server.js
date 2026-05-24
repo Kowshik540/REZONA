@@ -114,13 +114,28 @@ app.use('/api/admin', require('./routes/admin'));
 
 // ─── Serve React build in production ──────────────────────────────────────────
 if (process.env.NODE_ENV === 'production') {
-  const clientBuild = path.join(__dirname, '../client/build');
-  app.use(express.static(clientBuild));
-  app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api')) {
+  // Try multiple possible paths for the client build
+  const possiblePaths = [
+    path.join(__dirname, '../client/build'),
+    path.join(__dirname, 'public'),
+    path.join(__dirname, '../public'),
+  ];
+  
+  let clientBuild = null;
+  for (const p of possiblePaths) {
+    if (require('fs').existsSync(p)) { clientBuild = p; break; }
+  }
+  
+  if (clientBuild) {
+    logger.info('Serving static files from: ' + clientBuild);
+    app.use(express.static(clientBuild));
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api')) return next();
       res.sendFile(path.join(clientBuild, 'index.html'));
-    }
-  });
+    });
+  } else {
+    logger.warn('No client build found. Frontend will not be served.');
+  }
 }
 
 // ─── 404 Handler ──────────────────────────────────────────────────────────────
