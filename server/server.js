@@ -128,9 +128,17 @@ if (process.env.NODE_ENV === 'production') {
   
   if (clientBuild) {
     logger.info('Serving static files from: ' + clientBuild);
-    app.use(express.static(clientBuild));
+    app.use(express.static(clientBuild, { 
+      maxAge: '1d',
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.js')) res.setHeader('Content-Type', 'application/javascript');
+        if (filePath.endsWith('.css')) res.setHeader('Content-Type', 'text/css');
+      }
+    }));
+    // SPA fallback — only for non-API, non-static-file requests
     app.get('*', (req, res, next) => {
       if (req.path.startsWith('/api')) return next();
+      if (req.path.match(/\.(js|css|map|ico|png|jpg|svg|json|txt|xml)$/)) return next();
       res.sendFile(path.join(clientBuild, 'index.html'));
     });
   } else {
