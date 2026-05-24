@@ -529,14 +529,20 @@ function buildPdf(resumeData, templateId) {
 }
 
 function getFormatNumber(templateId, style) {
-  if (style === 'clean') return 1;
-  if (style === 'classic') return 2;
-  if (style === 'harvard') return 3;
-  if (style === 'wallstreet') return 4;
-  // Colored templates cycle through formats 5-10
-  const colored = Object.entries(TEMPLATES).filter(([,v]) => !v.style).map(([k]) => k);
-  const idx = colored.indexOf(templateId);
-  return 5 + (Math.max(0, idx) % 6);
+  // Match the frontend's 5 layout types exactly
+  const layoutMap = {
+    // Minimal (format 1): centered name, thin lines, no color
+    'clean-entry': 1, 'minimal-white': 1, 'harvard-clean': 1, 'steel-minimal': 1,
+    // Classic (format 2): left-aligned serif, bold lines, traditional
+    'elegant-green': 2, 'emerald-classic': 2, 'forest-earth': 2, 'classic-serif': 2, 'wall-street': 2, 'teal-modern': 2, 'platinum-exec': 2, 'copper-vintage': 2,
+    // Modern (format 5): colored header block
+    'modern-blue': 5, 'tech-cyan': 6, 'corporate-navy': 5, 'ocean-deep': 6, 'indigo-night': 5, 'slate-professional': 6,
+    // Executive (format 9): large dark header
+    'executive-dark': 9, 'midnight-gold': 9, 'charcoal-sharp': 10, 'obsidian-elite': 9, 'crimson-power': 10, 'sapphire-royal': 9, 'titanium-pro': 10, 'amber-prestige': 9,
+    // Student (format 6/8): thin accent bar, education-first
+    'creative-pink': 8, 'arctic-frost': 7, 'rose-elegant': 8, 'violet-luxe': 7, 'aurora-gradient': 8, 'ruby-bold': 7, 'sunset-warm': 8, 'jade-harmony': 7,
+  };
+  return layoutMap[templateId] || 5;
 }
 
 function renderHeader(doc, data, contact, fmt, t, L, W) {
