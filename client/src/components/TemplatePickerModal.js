@@ -141,11 +141,7 @@ function buildPreviewHtml(template, resumeData) {
 function TemplateMockup({ template, selected, onSelect }) {
   const t = template;
   const tierLabel = t.tier !== 'free' ? t.tier.charAt(0).toUpperCase() + t.tier.slice(1) : null;
-  const tierColors = {
-    elite: '#f59e0b',
-    exclusive: '#8b5cf6',
-    admin: '#ef4444',
-  };
+  const tierColors = { elite: '#f59e0b', exclusive: '#8b5cf6', admin: '#ef4444' };
 
   return (
     <button
@@ -160,21 +156,36 @@ function TemplateMockup({ template, selected, onSelect }) {
           {tierLabel}
         </div>
       )}
-      <div className="tpicker-mock">
-        <div className="tpicker-mock__header" style={{ background: t.headerBg, padding: '10px 10px 8px' }}>
-          <div style={{ height: 8, borderRadius: 2, background: 'rgba(255,255,255,0.8)', width: '65%', marginBottom: 5 }} />
-          <div style={{ height: 5, borderRadius: 2, background: 'rgba(255,255,255,0.4)', width: '40%' }} />
-          <div style={{ height: 2, background: 'rgba(255,255,255,0.25)', marginTop: 8 }} />
+      {/* Realistic resume mockup */}
+      <div className="tpicker-mock" style={{ background: '#fff', padding: '12px 10px' }}>
+        {/* Header area */}
+        <div style={{ marginBottom: 8, paddingBottom: 6, borderBottom: `2px solid ${t.accentColor}` }}>
+          <div style={{ height: 8, borderRadius: 2, background: t.headerBg === '#ffffff' ? '#1a1a1a' : t.headerBg, width: '55%', marginBottom: 4 }} />
+          <div style={{ height: 4, borderRadius: 1, background: '#ccc', width: '80%' }} />
         </div>
-        <div className="tpicker-mock__body" style={{ background: t.bodyBg }}>
-          <div style={{ height: 4, borderRadius: 2, background: t.accentColor + '60', width: '30%', marginBottom: 7 }} />
-          <div style={{ height: 4, borderRadius: 2, background: '#e5e7eb', width: '90%', marginBottom: 4 }} />
-          <div style={{ height: 4, borderRadius: 2, background: '#e5e7eb', width: '75%', marginBottom: 10 }} />
-          <div style={{ height: 4, borderRadius: 2, background: t.accentColor + '60', width: '25%', marginBottom: 7 }} />
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-            {[40, 55, 35, 48].map((w, i) => (
-              <div key={i} style={{ height: 12, borderRadius: 3, background: t.accentColor + '28', width: w }} />
+        {/* Summary */}
+        <div style={{ marginBottom: 6 }}>
+          <div style={{ height: 3, background: '#e5e7eb', width: '100%', marginBottom: 2 }} />
+          <div style={{ height: 3, background: '#e5e7eb', width: '90%', marginBottom: 2 }} />
+          <div style={{ height: 3, background: '#e5e7eb', width: '70%' }} />
+        </div>
+        {/* Skills */}
+        <div style={{ marginBottom: 6 }}>
+          <div style={{ height: 5, borderRadius: 1, background: t.accentColor + '40', width: '30%', marginBottom: 4 }} />
+          <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+            {[28, 35, 22, 30, 25].map((w, i) => (
+              <div key={i} style={{ height: 8, borderRadius: 2, background: t.accentColor + '20', border: `1px solid ${t.accentColor}30`, width: w }} />
             ))}
+          </div>
+        </div>
+        {/* Experience */}
+        <div>
+          <div style={{ height: 5, borderRadius: 1, background: t.accentColor + '40', width: '35%', marginBottom: 4 }} />
+          <div style={{ height: 4, background: '#374151', width: '50%', marginBottom: 3, borderRadius: 1 }} />
+          <div style={{ paddingLeft: 6 }}>
+            <div style={{ height: 3, background: '#e5e7eb', width: '95%', marginBottom: 2 }} />
+            <div style={{ height: 3, background: '#e5e7eb', width: '85%', marginBottom: 2 }} />
+            <div style={{ height: 3, background: '#e5e7eb', width: '90%' }} />
           </div>
         </div>
       </div>
@@ -381,14 +392,6 @@ const TemplatePickerModal = ({ resumeId, jobTitle, jobDescription, skills, onClo
         {/* Step: Template Selection */}
         {step === 'pick' && (
           <>
-            <div className="tpicker-value-banner">
-              <span aria-hidden="true">✨</span>
-              <p>
-                {isGeneralOptimize
-                  ? 'AI will rebuild your resume with maximum ATS score — strong action verbs, quantified metrics, proper section headers, and optimized keyword density. The output is a clean, professional PDF ready to submit anywhere.'
-                  : `We'll use AI to completely rebuild your resume using your original experience and skills, formatted in the selected template and optimized for "${jobTitle}". The output is a clean, professional PDF ready to submit — no AI watermarks or identifiers.`}
-              </p>
-            </div>
 
             <div className="tpicker-body">
               <div className="tpicker-grid">
