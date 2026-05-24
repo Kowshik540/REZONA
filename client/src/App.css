@@ -515,3 +515,27 @@ main { flex: 1; }
   .tabs { width: 100%; }
   .tab { flex: 1; text-align: center; }
 }
+
+
+/* ===== MOBILE FIXES ===== */
+@media (max-width: 600px) {
+  .nav { padding: 0 12px; height: 56px; }
+  .nav-links { gap: 0.25rem; }
+  .nav-links a { font-size: 0.8rem; padding: 0.4rem 0.5rem; }
+  .btn-register { padding: 0.4rem 0.8rem !important; font-size: 0.8rem !important; }
+  .btn-logout { font-size: 0.8rem; padding: 0.3rem 0.6rem; }
+  .logo { font-size: 1.3rem; }
+  .auth-page { padding: 1rem; }
+  .auth-card { padding: 1.5rem; border-radius: 16px; }
+  .auth-header h1 { font-size: 1.4rem; }
+  .hero { padding: 2rem 1rem; min-height: auto; }
+  .hero-content h1 { font-size: 1.5rem; }
+  .hero-sub { font-size: 0.9rem; }
+  .upload-card { padding: 2rem 1rem; border-radius: 16px; }
+  .features { padding: 3rem 1rem; }
+  .features h2 { font-size: 1.5rem; }
+  .stats { padding: 2rem 1rem; gap: 1.5rem; }
+  .stat-item strong { font-size: 1.8rem; }
+  body { overflow-x: hidden; }
+  html { overflow-x: hidden; }
+}

@@ -444,7 +444,7 @@ const Dashboard = () => {
             <h3>Welcome to Rezona</h3>
             <p style={{ marginBottom: 24 }}>AI-powered resume optimization platform. Upload your resume or create one from scratch.</p>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 500, margin: '0 auto 24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, maxWidth: 500, margin: '0 auto 24px', padding: '0 8px' }}>
               <div style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 12, padding: 20, textAlign: 'center' }}>
                 <div style={{ fontSize: 28, marginBottom: 8 }}>📊</div>
                 <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>ATS Score Check</h4>

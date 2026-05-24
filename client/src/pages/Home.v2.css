@@ -725,9 +725,31 @@
   .hero-buttons-row { justify-content: center; }
 }
 
+@media (max-width: 768px) {
+  .hero-section { padding: 40px 16px; gap: 24px; }
+  .hero-display-title { font-size: 1.8rem; line-height: 1.2; }
+  .hero-description-text { font-size: 0.9rem; }
+  .hero-side-graphic { max-width: 100%; }
+  .section-heading-title { font-size: 1.5rem; }
+  .section-heading-subtitle { font-size: 0.85rem; padding: 0 16px; }
+  .features-cards-grid { padding: 0 16px; }
+  .pricing-cards-wrapper-grid { padding: 0 16px; }
+  .pricing-card { padding: 20px; }
+  .faq-section { padding: 40px 16px; }
+  .cta-section { padding: 40px 16px; }
+}
+
 @media (max-width: 480px) {
-  .hero-buttons-row { flex-direction: column; }
-  .hero-buttons-row a { width: 100%; text-align: center; }
+  .hero-section { padding: 30px 12px; }
+  .hero-display-title { font-size: 1.5rem; }
+  .hero-description-text { font-size: 0.82rem; }
+  .hero-buttons-row { flex-direction: column; width: 100%; }
+  .hero-buttons-row a { width: 100%; text-align: center; padding: 12px 16px; font-size: 0.85rem; }
   .pricing-toggle-widget { width: 100%; display: flex; }
   .pricing-toggle-widget button { flex: 1; padding: 8px 4px; font-size: 0.78rem; }
+  .pricing-card .plan-title { font-size: 1rem; }
+  .pricing-card .amount { font-size: 2rem; }
+  .feature-card { padding: 16px; }
+  .section-heading-title { font-size: 1.3rem; }
+  .metric-data-block .metric-value { font-size: 1.5rem; }
 }
