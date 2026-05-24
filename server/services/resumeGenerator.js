@@ -570,50 +570,108 @@ function getFormatNumber(templateId, style) {
   return map[templateId] || 1;
 }
 
+function getFormatNumber(templateId) {
+  // Each of the 34 templates gets its own unique number (1-34)
+  const all = Object.keys(TEMPLATES);
+  const idx = all.indexOf(templateId);
+  return idx >= 0 ? idx + 1 : 1;
+}
+
 function renderHeader(doc, data, contact, fmt, t, L, W) {
   let y = 36;
+  const name = data.name || 'Candidate';
 
-  if (fmt === 1) { // Centered name, thin line below
-    doc.font('Helvetica-Bold').fontSize(22).fillColor([0,0,0]).text(data.name||'', L, y, {width:W, align:'center'}); y+=28;
-    if (contact.length) { doc.font('Helvetica').fontSize(8.5).fillColor([50,50,50]).text(contact.join('  •  '), L, y, {width:W, align:'center'}); y+=14; }
-    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.5).stroke(); y+=14;
-
-  } else if (fmt === 2) { // Left-aligned bold name, thick line
-    doc.font('Times-Bold').fontSize(24).fillColor([0,0,0]).text(data.name||'', L, y, {width:W}); y+=30;
-    if (contact.length) { doc.font('Times-Roman').fontSize(9).fillColor([40,40,40]).text(contact.join('  |  '), L, y, {width:W}); y+=14; }
-    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(1.5).stroke(); y+=16;
-
-  } else if (fmt === 5) { // Name left, contact right on same line
-    doc.font('Helvetica-Bold').fontSize(20).fillColor([0,0,0]).text(data.name||'', L, y, {width:W*0.5}); 
-    if (contact.length) { doc.font('Helvetica').fontSize(8).fillColor([60,60,60]).text(contact.join(' | '), L, y+2, {width:W, align:'right'}); }
-    y+=26;
-    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.8).stroke(); y+=14;
-
-  } else if (fmt === 6) { // Name with double line below
-    doc.font('Helvetica-Bold').fontSize(18).fillColor([0,0,0]).text(data.name||'', L, y, {width:W}); y+=22;
-    if (contact.length) { doc.font('Helvetica').fontSize(8.5).fillColor([50,50,50]).text(contact.join('  •  '), L, y, {width:W}); y+=13; }
-    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(1).stroke();
-    doc.moveTo(L,y+3).lineTo(L+W,y+3).strokeColor([0,0,0]).lineWidth(0.3).stroke(); y+=18;
-
-  } else if (fmt === 7) { // Centered name, no line, just spacing
-    doc.font('Helvetica-Bold').fontSize(20).fillColor([0,0,0]).text((data.name||'').toUpperCase(), L, y, {width:W, align:'center', characterSpacing:1.5}); y+=26;
-    if (contact.length) { doc.font('Helvetica').fontSize(8).fillColor([60,60,60]).text(contact.join('   |   '), L, y, {width:W, align:'center'}); y+=16; }
-
-  } else if (fmt === 8) { // Name left-aligned, contact below, dashed line
-    doc.font('Times-Bold').fontSize(22).fillColor([0,0,0]).text(data.name||'', L, y, {width:W}); y+=26;
-    if (contact.length) { doc.font('Times-Roman').fontSize(8.5).fillColor([50,50,50]).text(contact.join('  |  '), L, y, {width:W}); y+=13; }
-    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.3).dash(3,{space:2}).stroke(); doc.undash(); y+=14;
-
-  } else if (fmt === 9) { // Large uppercase name, line, contact centered
-    doc.font('Helvetica-Bold').fontSize(26).fillColor([0,0,0]).text((data.name||'').toUpperCase(), L, y, {width:W, align:'center'}); y+=34;
-    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.8).stroke(); y+=8;
-    if (contact.length) { doc.font('Helvetica').fontSize(8).fillColor([50,50,50]).text(contact.join('  •  '), L, y, {width:W, align:'center'}); y+=16; }
-
-  } else { // fmt 10: Name left, thin top border
-    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(2).stroke(); y+=10;
-    doc.font('Helvetica-Bold').fontSize(20).fillColor([0,0,0]).text(data.name||'', L, y, {width:W}); y+=24;
-    if (contact.length) { doc.font('Helvetica').fontSize(8.5).fillColor([50,50,50]).text(contact.join('  |  '), L, y, {width:W}); y+=14; }
-    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.4).stroke(); y+=12;
+  // 34 unique header styles
+  if (fmt <= 4) { // Centered name variations
+    const sizes = [22, 20, 24, 18];
+    const fonts = ['Helvetica-Bold', 'Times-Bold', 'Helvetica-Bold', 'Courier-Bold'];
+    doc.font(fonts[fmt-1]).fontSize(sizes[fmt-1]).fillColor([0,0,0]).text(fmt===3?name.toUpperCase():name, L, y, {width:W, align:'center'}); y+=sizes[fmt-1]+6;
+    if (contact.length) { doc.font(fonts[fmt-1].replace('-Bold','')||'Helvetica').fontSize(8.5).fillColor([40,40,40]).text(contact.join('  •  '), L, y, {width:W, align:'center'}); y+=13; }
+    if (fmt===1) { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.5).stroke(); y+=12; }
+    else if (fmt===2) { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(1.5).stroke(); y+=14; }
+    else if (fmt===3) { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.8).stroke(); doc.moveTo(L,y+2.5).lineTo(L+W,y+2.5).strokeColor([0,0,0]).lineWidth(0.3).stroke(); y+=16; }
+    else { y+=8; }
+  } else if (fmt <= 8) { // Left-aligned name variations
+    const sizes = [22, 20, 24, 18];
+    const fonts = ['Helvetica-Bold', 'Times-Bold', 'Helvetica-Bold', 'Courier-Bold'];
+    const i = fmt-5;
+    doc.font(fonts[i]).fontSize(sizes[i]).fillColor([0,0,0]).text(fmt===7?name.toUpperCase():name, L, y, {width:W}); y+=sizes[i]+6;
+    if (contact.length) { doc.font(fonts[i].replace('-Bold','')||'Helvetica').fontSize(8.5).fillColor([40,40,40]).text(contact.join(fmt%2===0?' | ':'  •  '), L, y, {width:W}); y+=13; }
+    if (fmt===5) { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.4).stroke(); y+=12; }
+    else if (fmt===6) { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(1.2).stroke(); y+=14; }
+    else if (fmt===7) { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.3).dash(4,{space:2}).stroke(); doc.undash(); y+=14; }
+    else { doc.moveTo(L,y).lineTo(L+80,y).strokeColor([0,0,0]).lineWidth(1.5).stroke(); y+=14; }
+  } else if (fmt <= 12) { // Name left, contact right
+    const sizes = [20, 18, 22, 20];
+    const fonts = ['Helvetica-Bold', 'Times-Bold', 'Helvetica-Bold', 'Courier-Bold'];
+    const i = fmt-9;
+    doc.font(fonts[i]).fontSize(sizes[i]).fillColor([0,0,0]).text(name, L, y, {width:W*0.55});
+    if (contact.length) { doc.font('Helvetica').fontSize(7.5).fillColor([50,50,50]).text(contact.join('\n'), L+W*0.55, y, {width:W*0.45, align:'right'}); }
+    y += Math.max(sizes[i]+4, contact.length*10+4);
+    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(fmt===9?0.4:fmt===10?1:fmt===11?0.6:0.3).stroke(); y+=12;
+  } else if (fmt <= 17) { // Large name with various separators
+    const styles = [
+      {size:26,font:'Helvetica-Bold',upper:true,sep:'thick'},
+      {size:24,font:'Times-Bold',upper:false,sep:'double'},
+      {size:22,font:'Helvetica-Bold',upper:true,sep:'thin'},
+      {size:20,font:'Courier-Bold',upper:false,sep:'dashed'},
+      {size:28,font:'Helvetica-Bold',upper:true,sep:'short'},
+    ];
+    const s = styles[fmt-13];
+    doc.font(s.font).fontSize(s.size).fillColor([0,0,0]).text(s.upper?name.toUpperCase():name, L, y, {width:W, align:'center'}); y+=s.size+8;
+    if (contact.length) { doc.font('Helvetica').fontSize(8).fillColor([50,50,50]).text(contact.join('  |  '), L, y, {width:W, align:'center'}); y+=14; }
+    if (s.sep==='thick') { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(1.5).stroke(); y+=14; }
+    else if (s.sep==='double') { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.8).stroke(); doc.moveTo(L,y+3).lineTo(L+W,y+3).strokeColor([0,0,0]).lineWidth(0.3).stroke(); y+=16; }
+    else if (s.sep==='thin') { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.3).stroke(); y+=12; }
+    else if (s.sep==='dashed') { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.4).dash(5,{space:3}).stroke(); doc.undash(); y+=14; }
+    else { doc.moveTo(L+W/2-40,y).lineTo(L+W/2+40,y).strokeColor([0,0,0]).lineWidth(1).stroke(); y+=14; }
+  } else if (fmt <= 22) { // Compact headers
+    const i = fmt-18;
+    const fonts = ['Helvetica-Bold','Times-Bold','Helvetica-Bold','Courier-Bold','Times-Bold'];
+    doc.font(fonts[i]).fontSize(18).fillColor([0,0,0]).text(name, L, y, {width:W, align:i%2===0?'left':'center'}); y+=22;
+    if (contact.length) { doc.font('Helvetica').fontSize(8).fillColor([50,50,50]).text(contact.join(' | '), L, y, {width:W, align:i%2===0?'left':'center'}); y+=12; }
+    if (i===0) { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.5).stroke(); y+=10; }
+    else if (i===1) { y+=6; }
+    else if (i===2) { doc.moveTo(L,y).lineTo(L+W/3,y).strokeColor([0,0,0]).lineWidth(1).stroke(); y+=12; }
+    else if (i===3) { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.3).dash(2,{space:1}).stroke(); doc.undash(); y+=10; }
+    else { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(2).stroke(); y+=14; }
+  } else if (fmt <= 28) { // Top border first, then name
+    const i = fmt-23;
+    const borders = [2, 1, 0.5, 1.5, 0.8, 3];
+    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(borders[i]).stroke(); y+=borders[i]+8;
+    const fonts = ['Helvetica-Bold','Times-Bold','Courier-Bold','Helvetica-Bold','Times-Bold','Helvetica-Bold'];
+    const aligns = ['left','center','left','center','left','center'];
+    doc.font(fonts[i]).fontSize(20).fillColor([0,0,0]).text(i%3===2?name.toUpperCase():name, L, y, {width:W, align:aligns[i]}); y+=24;
+    if (contact.length) { doc.font('Helvetica').fontSize(8).fillColor([50,50,50]).text(contact.join(i%2===0?' • ':' | '), L, y, {width:W, align:aligns[i]}); y+=13; }
+    y+=4;
+  } else { // fmt 29-34: Unique special headers
+    const i = fmt-29;
+    if (i===0) { // Name with line through middle
+      doc.font('Helvetica-Bold').fontSize(20).fillColor([0,0,0]).text(name, L, y, {width:W, align:'center'}); y+=26;
+      doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.4).stroke(); y+=4;
+      if (contact.length) { doc.font('Helvetica').fontSize(8).fillColor([50,50,50]).text(contact.join(' • '), L, y, {width:W, align:'center'}); y+=13; }
+      doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.4).stroke(); y+=12;
+    } else if (i===1) { // Serif large, contact on next line left
+      doc.font('Times-Bold').fontSize(26).fillColor([0,0,0]).text(name, L, y, {width:W}); y+=32;
+      if (contact.length) { doc.font('Times-Roman').fontSize(9).fillColor([40,40,40]).text(contact.join('  |  '), L, y, {width:W}); y+=14; }
+      doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.6).stroke(); y+=14;
+    } else if (i===2) { // Small caps name
+      doc.font('Helvetica-Bold').fontSize(16).fillColor([0,0,0]).text(name.toUpperCase(), L, y, {width:W, characterSpacing:2}); y+=22;
+      if (contact.length) { doc.font('Helvetica').fontSize(8).fillColor([50,50,50]).text(contact.join('  •  '), L, y, {width:W}); y+=13; }
+      doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(1).stroke(); y+=12;
+    } else if (i===3) { // Courier monospace style
+      doc.font('Courier-Bold').fontSize(18).fillColor([0,0,0]).text(name, L, y, {width:W}); y+=24;
+      if (contact.length) { doc.font('Courier').fontSize(8).fillColor([40,40,40]).text(contact.join(' | '), L, y, {width:W}); y+=13; }
+      doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.5).stroke(); y+=12;
+    } else if (i===4) { // Centered with dots separator
+      doc.font('Helvetica-Bold').fontSize(22).fillColor([0,0,0]).text(name, L, y, {width:W, align:'center'}); y+=28;
+      if (contact.length) { doc.font('Helvetica').fontSize(8).fillColor([50,50,50]).text(contact.join('  ·  '), L, y, {width:W, align:'center'}); y+=14; }
+      y+=6;
+    } else { // Bold left with thick short underline
+      doc.font('Helvetica-Bold').fontSize(22).fillColor([0,0,0]).text(name, L, y, {width:W}); y+=26;
+      doc.moveTo(L,y).lineTo(L+60,y).strokeColor([0,0,0]).lineWidth(2.5).stroke(); y+=8;
+      if (contact.length) { doc.font('Helvetica').fontSize(8).fillColor([50,50,50]).text(contact.join(' | '), L, y, {width:W}); y+=14; }
+    }
   }
   return y;
 }
@@ -622,46 +680,72 @@ function renderAllSections(doc, data, fmt, t, L, W, startY) {
   let y = startY;
   function cp() { if (y > 740) { doc.addPage(); y = 36; } }
 
-  const isSerif = (fmt === 2 || fmt === 8);
-  const font = isSerif ? 'Times-Roman' : 'Helvetica';
-  const bFont = isSerif ? 'Times-Bold' : 'Helvetica-Bold';
+  // Vary font based on format
+  const serifFmts = [2,6,8,10,14,16,20,24,26,30];
+  const courierFmts = [4,12,21,32];
+  const isSerif = serifFmts.includes(fmt);
+  const isCourier = courierFmts.includes(fmt);
+  const font = isCourier ? 'Courier' : isSerif ? 'Times-Roman' : 'Helvetica';
+  const bFont = isCourier ? 'Courier-Bold' : isSerif ? 'Times-Bold' : 'Helvetica-Bold';
+
+  // Vary section title style based on format group
+  const titleStyle = fmt <= 6 ? 'line' : fmt <= 12 ? 'bold-only' : fmt <= 18 ? 'dashed' : fmt <= 24 ? 'short-line' : fmt <= 30 ? 'thick' : 'none';
 
   function secTitle(title) {
-    cp(); y += 5;
-    if (fmt === 7) { // No line, just bold uppercase with spacing
-      doc.font(bFont).fontSize(10).fillColor([0,0,0]).text(title.toUpperCase(), L, y, {width:W, characterSpacing: 0.8}); y+=14;
-    } else if (fmt === 8) { // Dashed line below title
-      doc.font(bFont).fontSize(10).fillColor([0,0,0]).text(title.toUpperCase(), L, y, {width:W}); y+=13;
-      doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.3).dash(3,{space:2}).stroke(); doc.undash(); y+=8;
-    } else if (fmt === 9) { // Bold title, full thick line
-      doc.font(bFont).fontSize(11).fillColor([0,0,0]).text(title.toUpperCase(), L, y, {width:W}); y+=14;
-      doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(1).stroke(); y+=8;
-    } else if (fmt === 10) { // Title with short line
-      doc.font(bFont).fontSize(10).fillColor([0,0,0]).text(title.toUpperCase(), L, y, {width:W}); y+=13;
-      doc.moveTo(L,y).lineTo(L+60,y).strokeColor([0,0,0]).lineWidth(0.8).stroke(); y+=8;
-    } else { // Default: title + full thin line
-      doc.font(bFont).fontSize(10).fillColor([0,0,0]).text(title.toUpperCase(), L, y, {width:W}); y+=13;
+    cp(); y += 6;
+    const t = title.toUpperCase();
+    if (titleStyle === 'line') {
+      doc.font(bFont).fontSize(10).fillColor([0,0,0]).text(t, L, y, {width:W}); y+=13;
       doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.4).stroke(); y+=7;
+    } else if (titleStyle === 'bold-only') {
+      doc.font(bFont).fontSize(10.5).fillColor([0,0,0]).text(t, L, y, {width:W}); y+=16;
+    } else if (titleStyle === 'dashed') {
+      doc.font(bFont).fontSize(10).fillColor([0,0,0]).text(t, L, y, {width:W}); y+=13;
+      doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.3).dash(3,{space:2}).stroke(); doc.undash(); y+=7;
+    } else if (titleStyle === 'short-line') {
+      doc.font(bFont).fontSize(10).fillColor([0,0,0]).text(t, L, y, {width:W}); y+=13;
+      doc.moveTo(L,y).lineTo(L+60,y).strokeColor([0,0,0]).lineWidth(0.8).stroke(); y+=7;
+    } else if (titleStyle === 'thick') {
+      doc.font(bFont).fontSize(10).fillColor([0,0,0]).text(t, L, y, {width:W}); y+=13;
+      doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(1.2).stroke(); y+=8;
+    } else {
+      doc.font(bFont).fontSize(10).fillColor([0,0,0]).text(t, L, y, {width:W, characterSpacing:0.5}); y+=15;
     }
   }
 
   function body(text, opts={}) { cp(); doc.font(opts.bold?bFont:font).fontSize(opts.size||9.3).fillColor([0,0,0]); const h=doc.heightOfString(text,{width:W}); doc.text(text,L,y,{width:W}); y+=h+(opts.gap||4); }
-  function bullet(text) { cp(); doc.font(font).fontSize(9.2).fillColor([0,0,0]); doc.text('•',L+6,y); const h=doc.heightOfString(text,{width:W-18}); doc.text(text,L+16,y,{width:W-18}); y+=h+3; }
+  function bullet(text) { cp(); doc.font(font).fontSize(9.2).fillColor([0,0,0]); const sym=fmt%3===0?'-':fmt%3===1?'•':'▸'; doc.text(sym,L+4,y); const h=doc.heightOfString(text,{width:W-16}); doc.text(text,L+14,y,{width:W-16}); y+=h+3; }
+
+  // Vary section ORDER based on format
+  const expFirst = fmt % 5 === 0; // Every 5th format puts experience before skills
 
   if (data.summary) { secTitle('Professional Summary'); body(data.summary, {gap:8}); }
-  if (data.skills?.length) { secTitle('Skills'); body(data.skills.join('  •  '), {gap:8}); }
-  if (data.experience?.length) {
-    secTitle('Experience');
-    for (const exp of data.experience) {
-      cp();
-      const role = exp.company ? `${exp.role||''} | ${exp.company}` : (exp.role||'');
-      doc.font(bFont).fontSize(9.5).fillColor([0,0,0]).text(role, L, y, {width:W*0.72});
-      if (exp.duration) doc.font(font).fontSize(8.5).fillColor([60,60,60]).text(exp.duration, L, y, {width:W, align:'right'});
-      y += 13;
-      if (exp.bullets?.length) for (const b of exp.bullets) { if(b) bullet(b); }
-      y += 4;
+  
+  if (expFirst) {
+    renderExperience(); renderSkills();
+  } else {
+    renderSkills(); renderExperience();
+  }
+
+  function renderSkills() {
+    if (data.skills?.length) { secTitle('Technical Skills'); body(data.skills.join('  •  '), {gap:8}); }
+  }
+
+  function renderExperience() {
+    if (data.experience?.length) {
+      secTitle('Professional Experience');
+      for (const exp of data.experience) {
+        cp();
+        const role = exp.company ? `${exp.role||''} | ${exp.company}` : (exp.role||'');
+        doc.font(bFont).fontSize(9.5).fillColor([0,0,0]).text(role, L, y, {width:W*0.72});
+        if (exp.duration) doc.font(font).fontSize(8.5).fillColor([60,60,60]).text(exp.duration, L, y, {width:W, align:'right'});
+        y += 13;
+        if (exp.bullets?.length) for (const b of exp.bullets) { if(b) bullet(b); }
+        y += 4;
+      }
     }
   }
+
   if (data.projects?.length) {
     secTitle('Projects');
     for (const p of data.projects) { cp(); doc.font(bFont).fontSize(9.3).fillColor([0,0,0]).text(p.tech?`${p.name||''} | ${p.tech}`:(p.name||''), L, y, {width:W}); y+=12; if(p.description) bullet(p.description); y+=2; }
