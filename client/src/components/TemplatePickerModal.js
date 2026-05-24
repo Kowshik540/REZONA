@@ -143,6 +143,9 @@ function TemplateMockup({ template, selected, onSelect }) {
   const tierLabel = t.tier !== 'free' ? t.tier.charAt(0).toUpperCase() + t.tier.slice(1) : null;
   const tierColors = { elite: '#f59e0b', exclusive: '#8b5cf6', admin: '#ef4444' };
 
+  // Each template gets a different layout structure in the preview
+  const layoutType = getLayoutType(t.id);
+
   return (
     <button
       className={`tpicker-card ${selected ? 'tpicker-card--active' : ''}`}
@@ -156,45 +159,125 @@ function TemplateMockup({ template, selected, onSelect }) {
           {tierLabel}
         </div>
       )}
-      {/* Realistic resume mockup */}
-      <div className="tpicker-mock" style={{ background: '#fff', padding: '12px 10px' }}>
-        {/* Header area */}
-        <div style={{ marginBottom: 8, paddingBottom: 6, borderBottom: `2px solid ${t.accentColor}` }}>
-          <div style={{ height: 8, borderRadius: 2, background: t.headerBg === '#ffffff' ? '#1a1a1a' : t.headerBg, width: '55%', marginBottom: 4 }} />
-          <div style={{ height: 4, borderRadius: 1, background: '#ccc', width: '80%' }} />
-        </div>
-        {/* Summary */}
-        <div style={{ marginBottom: 6 }}>
-          <div style={{ height: 3, background: '#e5e7eb', width: '100%', marginBottom: 2 }} />
-          <div style={{ height: 3, background: '#e5e7eb', width: '90%', marginBottom: 2 }} />
-          <div style={{ height: 3, background: '#e5e7eb', width: '70%' }} />
-        </div>
-        {/* Skills */}
-        <div style={{ marginBottom: 6 }}>
-          <div style={{ height: 5, borderRadius: 1, background: t.accentColor + '40', width: '30%', marginBottom: 4 }} />
-          <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-            {[28, 35, 22, 30, 25].map((w, i) => (
-              <div key={i} style={{ height: 8, borderRadius: 2, background: t.accentColor + '20', border: `1px solid ${t.accentColor}30`, width: w }} />
-            ))}
-          </div>
-        </div>
-        {/* Experience */}
-        <div>
-          <div style={{ height: 5, borderRadius: 1, background: t.accentColor + '40', width: '35%', marginBottom: 4 }} />
-          <div style={{ height: 4, background: '#374151', width: '50%', marginBottom: 3, borderRadius: 1 }} />
-          <div style={{ paddingLeft: 6 }}>
-            <div style={{ height: 3, background: '#e5e7eb', width: '95%', marginBottom: 2 }} />
-            <div style={{ height: 3, background: '#e5e7eb', width: '85%', marginBottom: 2 }} />
-            <div style={{ height: 3, background: '#e5e7eb', width: '90%' }} />
-          </div>
-        </div>
+      <div className="tpicker-mock" style={{ background: '#fff', padding: 0, overflow: 'hidden', aspectRatio: '8.5/11' }}>
+        {layoutType === 'classic' && <ClassicLayout accent={t.accentColor} headerBg={t.headerBg} />}
+        {layoutType === 'modern' && <ModernLayout accent={t.accentColor} headerBg={t.headerBg} />}
+        {layoutType === 'minimal' && <MinimalLayout accent={t.accentColor} />}
+        {layoutType === 'executive' && <ExecutiveLayout accent={t.accentColor} headerBg={t.headerBg} />}
+        {layoutType === 'student' && <StudentLayout accent={t.accentColor} />}
       </div>
       <div className="tpicker-card__info">
         <h3>{t.name}</h3>
-        <p>{t.description}</p>
       </div>
     </button>
   );
+}
+
+function getLayoutType(id) {
+  const map = {
+    'clean-entry': 'minimal', 'minimal-white': 'minimal', 'harvard-clean': 'minimal', 'steel-minimal': 'minimal',
+    'modern-blue': 'modern', 'tech-cyan': 'modern', 'corporate-navy': 'modern', 'ocean-deep': 'modern', 'indigo-night': 'modern',
+    'elegant-green': 'classic', 'emerald-classic': 'classic', 'forest-earth': 'classic', 'classic-serif': 'classic', 'wall-street': 'classic', 'teal-modern': 'classic',
+    'executive-dark': 'executive', 'midnight-gold': 'executive', 'charcoal-sharp': 'executive', 'obsidian-elite': 'executive', 'crimson-power': 'executive', 'sapphire-royal': 'executive',
+    'creative-pink': 'student', 'arctic-frost': 'student', 'rose-elegant': 'student', 'violet-luxe': 'student', 'aurora-gradient': 'student',
+  };
+  return map[id] || 'modern';
+}
+
+// Layout 1: Classic Professional (left-aligned, serif-style, traditional)
+function ClassicLayout({ accent, headerBg }) {
+  return (
+    <div style={{ padding: '10px 8px', fontSize: 0 }}>
+      <div style={{ textAlign: 'center', marginBottom: 6 }}>
+        <div style={{ height: 7, background: '#1a1a1a', width: '45%', margin: '0 auto 3px', borderRadius: 1 }} />
+        <div style={{ height: 4, background: '#888', width: '60%', margin: '0 auto', borderRadius: 1 }} />
+      </div>
+      <div style={{ borderTop: `1.5px solid ${accent}`, marginBottom: 6 }} />
+      <div style={{ marginBottom: 6 }}>{lines([95, 88, 75], '#ddd')}</div>
+      <div style={{ marginBottom: 4 }}><div style={{ height: 5, background: '#1a1a1a', width: '35%', marginBottom: 3, borderRadius: 1 }} />{lines([90, 85, 92, 80], '#e5e7eb')}</div>
+      <div style={{ marginBottom: 4 }}><div style={{ height: 5, background: '#1a1a1a', width: '30%', marginBottom: 3, borderRadius: 1 }} /><div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>{[22,28,20,25,18,24].map((w,i) => <div key={i} style={{ height: 6, background: accent+'25', border: `0.5px solid ${accent}50`, borderRadius: 2, width: w }} />)}</div></div>
+      <div><div style={{ height: 5, background: '#1a1a1a', width: '28%', marginBottom: 3, borderRadius: 1 }} />{lines([88, 82], '#e5e7eb')}</div>
+    </div>
+  );
+}
+
+// Layout 2: Modern Professional (colored header block)
+function ModernLayout({ accent, headerBg }) {
+  const bg = headerBg === '#ffffff' ? accent : headerBg;
+  return (
+    <div style={{ fontSize: 0 }}>
+      <div style={{ background: bg, padding: '8px 8px 6px' }}>
+        <div style={{ height: 7, background: 'rgba(255,255,255,0.9)', width: '50%', marginBottom: 3, borderRadius: 1 }} />
+        <div style={{ height: 3, background: 'rgba(255,255,255,0.5)', width: '70%', borderRadius: 1 }} />
+      </div>
+      <div style={{ padding: '6px 8px' }}>
+        <div style={{ marginBottom: 5 }}><div style={{ height: 4, background: accent, width: '32%', marginBottom: 3, borderRadius: 1 }} />{lines([92, 85, 70], '#e5e7eb')}</div>
+        <div style={{ marginBottom: 5 }}><div style={{ height: 4, background: accent, width: '25%', marginBottom: 3, borderRadius: 1 }} /><div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>{[24,30,20,26,22,28,18].map((w,i) => <div key={i} style={{ height: 6, background: accent+'20', borderRadius: 2, width: w }} />)}</div></div>
+        <div><div style={{ height: 4, background: accent, width: '30%', marginBottom: 3, borderRadius: 1 }} /><div style={{ height: 4, background: '#374151', width: '45%', marginBottom: 2, borderRadius: 1 }} />{lines([88, 82, 90, 78], '#e5e7eb')}</div>
+      </div>
+    </div>
+  );
+}
+
+// Layout 3: Minimal (no color, just lines and text)
+function MinimalLayout({ accent }) {
+  return (
+    <div style={{ padding: '10px 8px', fontSize: 0 }}>
+      <div style={{ textAlign: 'center', marginBottom: 4 }}>
+        <div style={{ height: 8, background: '#111', width: '40%', margin: '0 auto 2px', borderRadius: 1 }} />
+        <div style={{ height: 3, background: '#999', width: '55%', margin: '0 auto', borderRadius: 1 }} />
+      </div>
+      <div style={{ borderTop: '1px solid #ccc', marginBottom: 5 }} />
+      <div style={{ marginBottom: 5 }}>{lines([95, 90, 80], '#ddd')}</div>
+      <div style={{ borderTop: '1px solid #ccc', marginBottom: 4 }} />
+      <div style={{ marginBottom: 5 }}><div style={{ height: 4, background: '#333', width: '25%', marginBottom: 3, borderRadius: 1 }} />{lines([92, 88, 85, 90], '#e8e8e8')}</div>
+      <div style={{ borderTop: '1px solid #ccc', marginBottom: 4 }} />
+      <div><div style={{ height: 4, background: '#333', width: '22%', marginBottom: 3, borderRadius: 1 }} />{lines([85, 78], '#e8e8e8')}</div>
+    </div>
+  );
+}
+
+// Layout 4: Executive (large dark header)
+function ExecutiveLayout({ accent, headerBg }) {
+  const bg = headerBg === '#ffffff' ? '#1e1b4b' : headerBg;
+  return (
+    <div style={{ fontSize: 0 }}>
+      <div style={{ background: bg, padding: '12px 8px 8px' }}>
+        <div style={{ height: 9, background: 'rgba(255,255,255,0.9)', width: '55%', marginBottom: 3, borderRadius: 1 }} />
+        <div style={{ height: 3, background: 'rgba(255,255,255,0.4)', width: '65%', borderRadius: 1 }} />
+      </div>
+      <div style={{ padding: '6px 8px' }}>
+        <div style={{ marginBottom: 5 }}>{lines([95, 88, 75], '#e5e7eb')}</div>
+        <div style={{ height: 4, background: accent, width: '28%', marginBottom: 3, borderRadius: 1 }} />
+        <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap', marginBottom: 5 }}>{[26,32,22,28,20,24].map((w,i) => <div key={i} style={{ height: 6, background: accent+'20', borderRadius: 2, width: w }} />)}</div>
+        <div style={{ height: 4, background: accent, width: '32%', marginBottom: 3, borderRadius: 1 }} />
+        {lines([90, 84, 88], '#e5e7eb')}
+      </div>
+    </div>
+  );
+}
+
+// Layout 5: Student/Modern (education first, projects prominent)
+function StudentLayout({ accent }) {
+  return (
+    <div style={{ fontSize: 0 }}>
+      <div style={{ background: accent, height: 4 }} />
+      <div style={{ padding: '8px 8px' }}>
+        <div style={{ marginBottom: 5 }}>
+          <div style={{ height: 7, background: '#1a1a1a', width: '48%', marginBottom: 2, borderRadius: 1 }} />
+          <div style={{ height: 3, background: '#999', width: '60%', borderRadius: 1 }} />
+        </div>
+        <div style={{ marginBottom: 5 }}><div style={{ height: 4, background: accent, width: '28%', marginBottom: 3, borderRadius: 1 }} />{lines([85, 78], '#e5e7eb')}</div>
+        <div style={{ marginBottom: 5 }}><div style={{ height: 4, background: accent, width: '22%', marginBottom: 3, borderRadius: 1 }} /><div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>{[20,26,18,24,22,28,16].map((w,i) => <div key={i} style={{ height: 6, background: accent+'25', border: `0.5px solid ${accent}40`, borderRadius: 2, width: w }} />)}</div></div>
+        <div><div style={{ height: 4, background: accent, width: '25%', marginBottom: 3, borderRadius: 1 }} /><div style={{ height: 4, background: '#374151', width: '40%', marginBottom: 2, borderRadius: 1 }} />{lines([90, 85, 82], '#e5e7eb')}</div>
+      </div>
+    </div>
+  );
+}
+
+// Helper: render gray lines
+function lines(widths, color) {
+  return <div>{widths.map((w, i) => <div key={i} style={{ height: 3, background: color, width: `${w}%`, marginBottom: 2, borderRadius: 1 }} />)}</div>;
 }
 
 // ─── Animated Generating Step ─────────────────────────────────────────────────
