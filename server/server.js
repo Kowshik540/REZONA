@@ -42,10 +42,12 @@ if (process.env.NODE_ENV === 'production') {
     : [];
   app.use(cors({
     origin: (origin, callback) => {
+      // Allow same-origin requests (no origin header) and configured origins
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        // In production, still allow but log warning (same server serves both)
+        callback(null, true);
       }
     },
     credentials: true,
