@@ -546,85 +546,82 @@ function getFormatNumber(templateId, style) {
 }
 
 function renderHeader(doc, data, contact, fmt, t, L, W) {
-  function col(c) { return Array.isArray(c) ? c : [0,0,0]; }
   let y = 36;
 
-  if (fmt === 1) { // Centered sans, thin line
-    doc.font('Helvetica-Bold').fontSize(22).fillColor([10,10,10]).text(data.name||'', L, y, {width:W, align:'center'}); y+=28;
-    if (contact.length) { doc.font('Helvetica').fontSize(8.5).fillColor([80,80,80]).text(contact.join('  •  '), L, y, {width:W, align:'center'}); y+=14; }
-    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([40,40,40]).lineWidth(0.6).stroke(); y+=14;
-  } else if (fmt === 2) { // Left serif, thick line
+  if (fmt === 1) { // Centered name, thin line below
+    doc.font('Helvetica-Bold').fontSize(22).fillColor([0,0,0]).text(data.name||'', L, y, {width:W, align:'center'}); y+=28;
+    if (contact.length) { doc.font('Helvetica').fontSize(8.5).fillColor([50,50,50]).text(contact.join('  •  '), L, y, {width:W, align:'center'}); y+=14; }
+    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.5).stroke(); y+=14;
+
+  } else if (fmt === 2) { // Left-aligned bold name, thick line
     doc.font('Times-Bold').fontSize(24).fillColor([0,0,0]).text(data.name||'', L, y, {width:W}); y+=30;
-    if (contact.length) { doc.font('Times-Roman').fontSize(9).fillColor([50,50,50]).text(contact.join('  |  '), L, y, {width:W}); y+=14; }
-    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(1.2).stroke(); y+=16;
-  } else if (fmt === 3) { // Centered small, gray line
-    doc.font('Helvetica-Bold').fontSize(18).fillColor([20,20,20]).text(data.name||'', L, y, {width:W, align:'center'}); y+=24;
-    if (contact.length) { doc.font('Helvetica').fontSize(8).fillColor([100,100,100]).text(contact.join('   |   '), L, y, {width:W, align:'center'}); y+=13; }
-    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([200,200,200]).lineWidth(0.3).stroke(); y+=12;
-  } else if (fmt === 4) { // Dense serif
-    doc.font('Times-Bold').fontSize(20).fillColor([10,10,10]).text(data.name||'', L, y, {width:W}); y+=24;
-    if (contact.length) { doc.font('Times-Roman').fontSize(8.5).fillColor([60,60,60]).text(contact.join(' | '), L, y, {width:W}); y+=12; }
-    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([30,30,30]).lineWidth(0.8).stroke(); y+=12;
-  } else if (fmt === 5) { // Color block header
-    doc.rect(0,0,doc.page.width,85).fill(col(t.headerBg));
-    doc.font('Helvetica-Bold').fontSize(20).fillColor(col(t.headerText)).text(data.name||'', L, 22, {width:W});
-    if (contact.length) doc.font('Helvetica').fontSize(8.5).fillColor(col(t.headerText)).text(contact.join('  |  '), L, 48, {width:W});
-    y = 98;
-  } else if (fmt === 6) { // Thin top accent bar
-    doc.rect(0,0,doc.page.width,5).fill(col(t.accentColor)); y=20;
-    doc.font('Helvetica-Bold').fontSize(22).fillColor(col(t.bodyText)).text(data.name||'', L, y, {width:W}); y+=28;
-    if (contact.length) { doc.font('Helvetica').fontSize(8.5).fillColor([100,100,100]).text(contact.join('  •  '), L, y, {width:W}); y+=16; }
-  } else if (fmt === 7) { // Bold colored name, no header bg
-    doc.font('Helvetica-Bold').fontSize(24).fillColor(col(t.sectionColor)).text(data.name||'', L, y, {width:W}); y+=30;
-    if (contact.length) { doc.font('Helvetica').fontSize(8.5).fillColor([80,80,80]).text(contact.join('  |  '), L, y, {width:W}); y+=16; }
-  } else if (fmt === 8) { // Name + short accent underline
-    doc.font('Helvetica-Bold').fontSize(18).fillColor(col(t.bodyText)).text(data.name||'', L, y, {width:W}); y+=22;
-    doc.moveTo(L,y).lineTo(L+80,y).strokeColor(col(t.accentColor)).lineWidth(2.5).stroke(); y+=8;
-    if (contact.length) { doc.font('Helvetica').fontSize(8).fillColor([100,100,100]).text(contact.join('  |  '), L, y, {width:W}); y+=14; }
-  } else if (fmt === 9) { // Large dark header
-    doc.rect(0,0,doc.page.width,100).fill(col(t.headerBg));
-    doc.font('Helvetica-Bold').fontSize(26).fillColor(col(t.headerText)).text(data.name||'', L, 28, {width:W});
-    if (contact.length) doc.font('Helvetica').fontSize(9).fillColor(col(t.headerText)).text(contact.join('   •   '), L, 62, {width:W});
-    y = 115;
-  } else { // fmt 10: Two-tone header
-    doc.rect(0,0,doc.page.width,60).fill(col(t.headerBg));
-    doc.font('Helvetica-Bold').fontSize(20).fillColor(col(t.headerText)).text(data.name||'', L, 18, {width:W});
-    doc.rect(0,60,doc.page.width,22).fill(col(t.accentColor));
-    if (contact.length) doc.font('Helvetica').fontSize(8).fillColor([255,255,255]).text(contact.join('   |   '), L, 64, {width:W});
-    y = 95;
+    if (contact.length) { doc.font('Times-Roman').fontSize(9).fillColor([40,40,40]).text(contact.join('  |  '), L, y, {width:W}); y+=14; }
+    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(1.5).stroke(); y+=16;
+
+  } else if (fmt === 5) { // Name left, contact right on same line
+    doc.font('Helvetica-Bold').fontSize(20).fillColor([0,0,0]).text(data.name||'', L, y, {width:W*0.5}); 
+    if (contact.length) { doc.font('Helvetica').fontSize(8).fillColor([60,60,60]).text(contact.join(' | '), L, y+2, {width:W, align:'right'}); }
+    y+=26;
+    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.8).stroke(); y+=14;
+
+  } else if (fmt === 6) { // Name with double line below
+    doc.font('Helvetica-Bold').fontSize(18).fillColor([0,0,0]).text(data.name||'', L, y, {width:W}); y+=22;
+    if (contact.length) { doc.font('Helvetica').fontSize(8.5).fillColor([50,50,50]).text(contact.join('  •  '), L, y, {width:W}); y+=13; }
+    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(1).stroke();
+    doc.moveTo(L,y+3).lineTo(L+W,y+3).strokeColor([0,0,0]).lineWidth(0.3).stroke(); y+=18;
+
+  } else if (fmt === 7) { // Centered name, no line, just spacing
+    doc.font('Helvetica-Bold').fontSize(20).fillColor([0,0,0]).text((data.name||'').toUpperCase(), L, y, {width:W, align:'center', characterSpacing:1.5}); y+=26;
+    if (contact.length) { doc.font('Helvetica').fontSize(8).fillColor([60,60,60]).text(contact.join('   |   '), L, y, {width:W, align:'center'}); y+=16; }
+
+  } else if (fmt === 8) { // Name left-aligned, contact below, dashed line
+    doc.font('Times-Bold').fontSize(22).fillColor([0,0,0]).text(data.name||'', L, y, {width:W}); y+=26;
+    if (contact.length) { doc.font('Times-Roman').fontSize(8.5).fillColor([50,50,50]).text(contact.join('  |  '), L, y, {width:W}); y+=13; }
+    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.3).dash(3,{space:2}).stroke(); doc.undash(); y+=14;
+
+  } else if (fmt === 9) { // Large uppercase name, line, contact centered
+    doc.font('Helvetica-Bold').fontSize(26).fillColor([0,0,0]).text((data.name||'').toUpperCase(), L, y, {width:W, align:'center'}); y+=34;
+    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.8).stroke(); y+=8;
+    if (contact.length) { doc.font('Helvetica').fontSize(8).fillColor([50,50,50]).text(contact.join('  •  '), L, y, {width:W, align:'center'}); y+=16; }
+
+  } else { // fmt 10: Name left, thin top border
+    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(2).stroke(); y+=10;
+    doc.font('Helvetica-Bold').fontSize(20).fillColor([0,0,0]).text(data.name||'', L, y, {width:W}); y+=24;
+    if (contact.length) { doc.font('Helvetica').fontSize(8.5).fillColor([50,50,50]).text(contact.join('  |  '), L, y, {width:W}); y+=14; }
+    doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.4).stroke(); y+=12;
   }
   return y;
 }
 
 function renderAllSections(doc, data, fmt, t, L, W, startY) {
   let y = startY;
-  function col(c) { return Array.isArray(c) ? c : [0,0,0]; }
   function cp() { if (y > 740) { doc.addPage(); y = 36; } }
 
-  const isSerif = (fmt === 2 || fmt === 4);
+  const isSerif = (fmt === 2 || fmt === 8);
   const font = isSerif ? 'Times-Roman' : 'Helvetica';
   const bFont = isSerif ? 'Times-Bold' : 'Helvetica-Bold';
-  const tColor = (fmt <= 4) ? [0,0,0] : col(t.sectionColor);
-  const bColor = (fmt <= 4) ? [25,25,25] : col(t.bodyText);
-  const lColor = (fmt <= 4) ? [0,0,0] : col(t.accentColor);
 
   function secTitle(title) {
     cp(); y += 5;
-    if (fmt === 7) { // Left border style
-      doc.rect(L, y, 3, 13).fill(col(t.accentColor));
-      doc.font(bFont).fontSize(10).fillColor(tColor).text(title.toUpperCase(), L+10, y+1, {width:W-10}); y+=17;
-    } else if (fmt === 8) { // Dot style
-      doc.circle(L+4, y+5, 2.5).fill(col(t.accentColor));
-      doc.font(bFont).fontSize(10).fillColor(tColor).text(title.toUpperCase(), L+14, y, {width:W-14}); y+=15;
-    } else { // Line style (all others)
-      doc.font(bFont).fontSize(fmt<=4?11:10).fillColor(tColor).text(title.toUpperCase(), L, y, {width:W}); y+=14;
-      const lw = fmt===1?0.4 : fmt===2?0.5 : fmt===3?0.3 : fmt===4?0.3 : 0.6;
-      doc.moveTo(L,y).lineTo(L+W,y).strokeColor(fmt<=4?[0,0,0]:lColor).lineWidth(lw).stroke(); y+=7;
+    if (fmt === 7) { // No line, just bold uppercase with spacing
+      doc.font(bFont).fontSize(10).fillColor([0,0,0]).text(title.toUpperCase(), L, y, {width:W, characterSpacing: 0.8}); y+=14;
+    } else if (fmt === 8) { // Dashed line below title
+      doc.font(bFont).fontSize(10).fillColor([0,0,0]).text(title.toUpperCase(), L, y, {width:W}); y+=13;
+      doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.3).dash(3,{space:2}).stroke(); doc.undash(); y+=8;
+    } else if (fmt === 9) { // Bold title, full thick line
+      doc.font(bFont).fontSize(11).fillColor([0,0,0]).text(title.toUpperCase(), L, y, {width:W}); y+=14;
+      doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(1).stroke(); y+=8;
+    } else if (fmt === 10) { // Title with short line
+      doc.font(bFont).fontSize(10).fillColor([0,0,0]).text(title.toUpperCase(), L, y, {width:W}); y+=13;
+      doc.moveTo(L,y).lineTo(L+60,y).strokeColor([0,0,0]).lineWidth(0.8).stroke(); y+=8;
+    } else { // Default: title + full thin line
+      doc.font(bFont).fontSize(10).fillColor([0,0,0]).text(title.toUpperCase(), L, y, {width:W}); y+=13;
+      doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.4).stroke(); y+=7;
     }
   }
 
-  function body(text, opts={}) { cp(); doc.font(opts.bold?bFont:font).fontSize(opts.size||9.3).fillColor(bColor); const h=doc.heightOfString(text,{width:W}); doc.text(text,L,y,{width:W}); y+=h+(opts.gap||4); }
-  function bullet(text) { cp(); doc.font(font).fontSize(9.2).fillColor(bColor); doc.text('•',L+6,y); const h=doc.heightOfString(text,{width:W-18}); doc.text(text,L+16,y,{width:W-18}); y+=h+3; }
+  function body(text, opts={}) { cp(); doc.font(opts.bold?bFont:font).fontSize(opts.size||9.3).fillColor([0,0,0]); const h=doc.heightOfString(text,{width:W}); doc.text(text,L,y,{width:W}); y+=h+(opts.gap||4); }
+  function bullet(text) { cp(); doc.font(font).fontSize(9.2).fillColor([0,0,0]); doc.text('•',L+6,y); const h=doc.heightOfString(text,{width:W-18}); doc.text(text,L+16,y,{width:W-18}); y+=h+3; }
 
   if (data.summary) { secTitle('Professional Summary'); body(data.summary, {gap:8}); }
   if (data.skills?.length) { secTitle('Skills'); body(data.skills.join('  •  '), {gap:8}); }
@@ -633,8 +630,8 @@ function renderAllSections(doc, data, fmt, t, L, W, startY) {
     for (const exp of data.experience) {
       cp();
       const role = exp.company ? `${exp.role||''} | ${exp.company}` : (exp.role||'');
-      doc.font(bFont).fontSize(9.5).fillColor(bColor).text(role, L, y, {width:W*0.72});
-      if (exp.duration) doc.font(font).fontSize(8.5).fillColor([110,110,110]).text(exp.duration, L, y, {width:W, align:'right'});
+      doc.font(bFont).fontSize(9.5).fillColor([0,0,0]).text(role, L, y, {width:W*0.72});
+      if (exp.duration) doc.font(font).fontSize(8.5).fillColor([60,60,60]).text(exp.duration, L, y, {width:W, align:'right'});
       y += 13;
       if (exp.bullets?.length) for (const b of exp.bullets) { if(b) bullet(b); }
       y += 4;
@@ -642,11 +639,11 @@ function renderAllSections(doc, data, fmt, t, L, W, startY) {
   }
   if (data.projects?.length) {
     secTitle('Projects');
-    for (const p of data.projects) { cp(); doc.font(bFont).fontSize(9.3).fillColor(bColor).text(p.tech?`${p.name||''} | ${p.tech}`:(p.name||''), L, y, {width:W}); y+=12; if(p.description) bullet(p.description); y+=2; }
+    for (const p of data.projects) { cp(); doc.font(bFont).fontSize(9.3).fillColor([0,0,0]).text(p.tech?`${p.name||''} | ${p.tech}`:(p.name||''), L, y, {width:W}); y+=12; if(p.description) bullet(p.description); y+=2; }
   }
   if (data.education?.length) {
     secTitle('Education');
-    for (const e of data.education) { cp(); doc.font(bFont).fontSize(9.3).fillColor(bColor).text(e.degree||'', L, y, {width:W*0.72}); if(e.year) doc.font(font).fontSize(8.5).fillColor([110,110,110]).text(e.year, L, y, {width:W, align:'right'}); y+=12; if(e.institution){doc.font(font).fontSize(8.5).fillColor([80,80,80]).text(e.institution,L,y,{width:W});y+=10;} if(e.details){doc.font(font).fontSize(8).fillColor([110,110,110]).text(e.details,L,y,{width:W});y+=10;} y+=2; }
+    for (const e of data.education) { cp(); doc.font(bFont).fontSize(9.3).fillColor([0,0,0]).text(e.degree||'', L, y, {width:W*0.72}); if(e.year) doc.font(font).fontSize(8.5).fillColor([60,60,60]).text(e.year, L, y, {width:W, align:'right'}); y+=12; if(e.institution){doc.font(font).fontSize(8.5).fillColor([40,40,40]).text(e.institution,L,y,{width:W});y+=10;} if(e.details){doc.font(font).fontSize(8).fillColor([60,60,60]).text(e.details,L,y,{width:W});y+=10;} y+=2; }
   }
   if (data.achievements?.length) { secTitle('Achievements'); for (const a of data.achievements) bullet(a); }
   if (data.certifications?.length) { secTitle('Certifications'); for (const c of data.certifications) bullet(c); }
