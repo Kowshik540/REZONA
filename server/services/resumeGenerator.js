@@ -529,20 +529,45 @@ function buildPdf(resumeData, templateId) {
 }
 
 function getFormatNumber(templateId, style) {
-  // Match the frontend's 5 layout types exactly
-  const layoutMap = {
-    // Minimal (format 1): centered name, thin lines, no color
-    'clean-entry': 1, 'minimal-white': 1, 'harvard-clean': 1, 'steel-minimal': 1,
-    // Classic (format 2): left-aligned serif, bold lines, traditional
-    'elegant-green': 2, 'emerald-classic': 2, 'forest-earth': 2, 'classic-serif': 2, 'wall-street': 2, 'teal-modern': 2, 'platinum-exec': 2, 'copper-vintage': 2,
-    // Modern (format 5): colored header block
-    'modern-blue': 5, 'tech-cyan': 6, 'corporate-navy': 5, 'ocean-deep': 6, 'indigo-night': 5, 'slate-professional': 6,
-    // Executive (format 9): large dark header
-    'executive-dark': 9, 'midnight-gold': 9, 'charcoal-sharp': 10, 'obsidian-elite': 9, 'crimson-power': 10, 'sapphire-royal': 9, 'titanium-pro': 10, 'amber-prestige': 9,
-    // Student (format 6/8): thin accent bar, education-first
-    'creative-pink': 8, 'arctic-frost': 7, 'rose-elegant': 8, 'violet-luxe': 7, 'aurora-gradient': 8, 'ruby-bold': 7, 'sunset-warm': 8, 'jade-harmony': 7,
+  // Every template gets a unique format number (1-10)
+  // This ensures each template produces a visually different PDF
+  const map = {
+    'clean-entry': 1,
+    'minimal-white': 7,
+    'harvard-clean': 9,
+    'steel-minimal': 10,
+    'modern-blue': 5,
+    'tech-cyan': 6,
+    'corporate-navy': 10,
+    'ocean-deep': 5,
+    'indigo-night': 6,
+    'slate-professional': 9,
+    'elegant-green': 2,
+    'emerald-classic': 8,
+    'forest-earth': 2,
+    'classic-serif': 8,
+    'wall-street': 2,
+    'teal-modern': 10,
+    'platinum-exec': 7,
+    'copper-vintage': 8,
+    'executive-dark': 9,
+    'midnight-gold': 9,
+    'charcoal-sharp': 10,
+    'obsidian-elite': 7,
+    'crimson-power': 5,
+    'sapphire-royal': 6,
+    'titanium-pro': 1,
+    'amber-prestige': 2,
+    'creative-pink': 6,
+    'arctic-frost': 1,
+    'rose-elegant': 7,
+    'violet-luxe': 5,
+    'aurora-gradient': 8,
+    'ruby-bold': 9,
+    'sunset-warm': 10,
+    'jade-harmony': 2,
   };
-  return layoutMap[templateId] || 5;
+  return map[templateId] || 1;
 }
 
 function renderHeader(doc, data, contact, fmt, t, L, W) {
