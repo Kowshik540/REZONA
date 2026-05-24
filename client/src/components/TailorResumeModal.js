@@ -51,16 +51,20 @@ const TailorResumeModal = ({ resumeId, skills = [], onClose, onTailored }) => {
     setLoading(true);
 
     try {
+      // Instead of calling /modify, we just pass the job details to the parent
+      // The actual resume generation happens in the TemplatePickerModal
+      // This gives users the template selection step first
+      
+      // Quick validation — verify resume is accessible
       const payload = {
         resumeId,
         jobTitle:       jobRole.trim(),
         jobDescription: jobDescription.trim(),
-        missingSkills:  [], // backend computes this
+        missingSkills:  [],
         skills,
       };
 
       const { data } = await api.post('/resume/modify', payload);
-
       if (!data.success) throw new Error(data.error || 'Tailoring failed');
 
       // Pass result up — parent (Dashboard) will open template picker

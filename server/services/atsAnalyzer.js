@@ -67,108 +67,116 @@ function wordCount(text) {
 
 /**
  * CONTENT scoring (max 30 pts)
- * Criteria: sections completeness, action verbs, quantification, word repetition
+ * Rewards: sections, metrics, action verbs
+ * Penalizes: weak verbs, generic phrases
  */
 function scoreContent(text, rawText) {
   let pts = 0;
   const checks = {};
 
-  // 1. Section coverage (up to 12 pts — 2 per critical section)
-  const criticalSections = ['contact','summary','experience','education','skills'];
+  // 1. Section coverage (up to 14 pts)
   const sectionResults = {};
   for (const [name, kws] of Object.entries(SECTIONS)) {
     sectionResults[name] = kws.some(k => text.includes(k));
   }
   const foundSections = Object.entries(sectionResults).filter(([,v]) => v).map(([k]) => k);
   const missingSections = Object.entries(sectionResults).filter(([,v]) => !v).map(([k]) => k);
-  const criticalFound = criticalSections.filter(s => sectionResults[s]).length;
-  pts += Math.min(12, criticalFound * 2.4);
+  pts += Math.min(14, foundSections.length * 2);
   checks.sectionsFound = foundSections;
   checks.sectionsMissing = missingSections;
 
   // 2. Quantified impact (up to 8 pts)
-  const qPattern = /(\d+%|\d+\s*x\b|\$\d+|₹\d+|\d+\s*(users|clients|customers|projects|teams|members|hours|days|months|lakh|crore|k\b|ms\b|seconds?))/gi;
-  const qExamples = (rawText.match(qPattern) || []).slice(0, 8);
-  const qScore = Math.min(8, qExamples.length * 1.3);
-  pts += qScore;
+  const qPattern = /(\d+%|\d+\+|\d+\s*x\b|\$\d+|₹\d+|\d+\s*(users|clients|customers|projects|teams|members|hours|days|months|lakh|crore|k\b|ms\b|seconds?|requests?|transactions?))/gi;
+  const qExamples = (rawText.match(qPattern) || []).slice(0, 12);
+  pts += Math.min(8, qExamples.length * 1.6);
   checks.quantifiedExamples = qExamples.slice(0, 5);
-  checks.hasQuantifiedImpact = qExamples.length >= 3;
+  checks.hasQuantifiedImpact = qExamples.length >= 2;
 
-  // 3. Action verbs (up to 6 pts)
+  // 3. Action verbs (up to 8 pts)
   const verbsFound = STRONG_ACTION_VERBS.filter(v => text.includes(v));
-  pts += Math.min(6, verbsFound.length * 0.6);
+  pts += Math.min(8, verbsFound.length * 0.8);
   checks.actionVerbsFound = verbsFound.length;
 
-  // 4. Word repetition penalty (up to -4 pts)
-  const words = text.split(/\s+/).filter(w => w.length > 5);
-  const freq = {};
-  words.forEach(w => { freq[w] = (freq[w] || 0) + 1; });
-  const overused = Object.entries(freq).filter(([,c]) => c > 6).map(([w]) => w);
-  if (overused.length > 3) pts -= 2;
-  if (overused.length > 6) pts -= 2;
-  checks.overusedWords = overused.slice(0, 5);
-
-  // 5. Weak verb penalty
+  // 4. Penalties (max -4)
   const weakFound = WEAK_VERBS.filter(v => text.includes(v));
-  if (weakFound.length > 2) pts -= 2;
+  if (weakFound.length > 0) pts -= Math.min(3, weakFound.length);
   checks.weakVerbsFound = weakFound;
+
+  const genericPhrases = ['various projects','multiple technologies','different tools','many years','several companies'];
+  const genericFound = genericPhrases.filter(p => text.includes(p));
+  if (genericFound.length > 0) pts -= Math.min(1, genericFound.length);
+  checks.genericPhrases = genericFound;
 
   return { pts: Math.max(0, Math.min(30, pts)), max: 30, checks };
 }
 
 /**
  * FORMAT scoring (max 25 pts)
- * Criteria: file info, length, email, phone, special chars, structure
+ * Starts at 0, earns points for good formatting
  */
 function scoreFormat(rawText) {
-  let pts = 25;
+  let pts = 0;
   const issues = [];
   const checks = {};
 
   const wc = wordCount(rawText);
   checks.wordCount = wc;
 
-  // Length check (optimal: 300–800 words for 1-2 pages)
-  if (wc < 200) { pts -= 6; issues.push('Resume is too short — aim for at least 300 words (1 full page)'); }
-  else if (wc < 300) { pts -= 2; issues.push('Resume is slightly short — add more detail to experience/projects'); }
-  else if (wc > 1000) { pts -= 3; issues.push('Resume may exceed 2 pages — trim to keep under ~800 words'); }
-  else if (wc > 800) { pts -= 1; issues.push('Resume is slightly long — consider condensing to 1–2 pages'); }
-  checks.lengthOk = wc >= 300 && wc <= 800;
+  // Length (up to 6 pts)
+  if (wc >= 300 && wc <= 900) { pts += 6; }
+  else if (wc >= 200) { pts += 3; issues.push('Resume length could be improved — aim for 300-700 words'); }
+  else { issues.push('Resume is too short — aim for at least 300 words'); }
+  checks.lengthOk = wc >= 300 && wc <= 900;
 
-  // Contact info
+  // Contact info (up to 8 pts)
   const hasEmail = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(rawText);
   const hasPhone = /(\+91|91)?[\s-]?[6-9]\d{9}/.test(rawText) ||
                    /(\+\d{1,3}[\s-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/.test(rawText);
   const hasLinkedIn = /linkedin\.com\//i.test(rawText);
+  const hasGithub = /github\.com\//i.test(rawText);
 
-  if (!hasEmail) { pts -= 4; issues.push('No email address detected — add it in the header'); }
-  if (!hasPhone) { pts -= 3; issues.push('No phone number found — include it for recruiter contact'); }
-  if (!hasLinkedIn) { pts -= 1; issues.push('LinkedIn URL missing — adds credibility'); }
+  if (hasEmail) pts += 3; else issues.push('Add email address for recruiter contact');
+  if (hasPhone) pts += 2; else issues.push('Add phone number');
+  if (hasLinkedIn) pts += 2; else issues.push('Add LinkedIn URL');
+  if (hasGithub) pts += 1;
   checks.hasEmail = hasEmail;
   checks.hasPhone = hasPhone;
   checks.hasLinkedIn = hasLinkedIn;
+  checks.hasGithub = hasGithub;
 
-  // Special characters (ATS misreads)
-  const specialChars = (rawText.match(/[│┤├─┼|▪▸►◆◇★☆✓✗]/g) || []).length;
-  if (specialChars > 15) { pts -= 4; issues.push('Too many special/box-drawing characters — ATS may garble your content'); }
-  else if (specialChars > 5) { pts -= 1; issues.push('A few special characters detected — prefer plain hyphens/dashes'); }
+  // Bullet points (up to 5 pts) — detect various bullet formats from PDF parsing
+  const bulletLines = (rawText.match(/^[\s]*[•\-\*▪►·‣⁃]\s/gm) || []).length;
+  // Also count lines that start with action verbs (common in PDF-parsed resumes)
+  const verbStartLines = (rawText.match(/^[\s]*(Developed|Built|Designed|Implemented|Created|Managed|Led|Architected|Optimized|Improved|Increased|Reduced|Deployed|Integrated|Automated|Engineered|Launched|Delivered|Collaborated|Analyzed|Spearheaded|Streamlined)\b/gmi) || []).length;
+  const effectiveBullets = bulletLines + verbStartLines;
+  checks.bulletPointCount = effectiveBullets;
+  if (effectiveBullets >= 8) pts += 5;
+  else if (effectiveBullets >= 5) pts += 4;
+  else if (effectiveBullets >= 3) pts += 2;
+  else if (wc > 200) issues.push('Add bullet points — ATS systems parse bullets better than paragraphs');
+
+  // Structure bonus (up to 4 pts)
+  const hasSummary = /summary|profile|objective/i.test(rawText);
+  const hasSkillsSection = /skills|technical skills/i.test(rawText);
+  const hasExpSection = /experience|employment|work history/i.test(rawText);
+  const hasEduSection = /education|degree|university|college/i.test(rawText);
+  if (hasSummary) pts += 1;
+  if (hasSkillsSection) pts += 1;
+  if (hasExpSection) pts += 1;
+  if (hasEduSection) pts += 1;
+
+  // Penalties (max -3)
+  const specialChars = (rawText.match(/[│┤├─┼▪▸►◆◇★☆✓✗●○■□▶◀→←↑↓]/g) || []).length;
+  if (specialChars > 10) { pts -= 2; issues.push('Too many special characters — ATS may garble content'); }
   checks.specialCharCount = specialChars;
   checks.specialCharsOk = specialChars <= 5;
-
-  // Bullet point consistency
-  const bulletLines = (rawText.match(/^[•\-\*]\s/gm) || []).length;
-  checks.bulletPointCount = bulletLines;
-  if (bulletLines < 3 && wc > 300) {
-    pts -= 2;
-    issues.push('Few or no bullet points — structure experience with bullets for ATS clarity');
-  }
 
   return { pts: Math.max(0, Math.min(25, pts)), max: 25, issues, checks };
 }
 
 /**
  * SKILLS scoring (max 25 pts)
- * Criteria: hard skills breadth, soft skills, JD match, certifications
+ * Rewards: skill count, certifications, JD match
  */
 function scoreSkills(text, rawText, jobDescription = '') {
   const found = TECH_SKILLS.filter(s => {
@@ -179,22 +187,23 @@ function scoreSkills(text, rawText, jobDescription = '') {
     }
   });
 
-  let pts = Math.min(18, found.length * 1.4);
+  // Up to 18 pts for skill count
+  let pts = Math.min(18, found.length * 1.5);
 
-  // Boost for certifications
+  // Certifications bonus (up to 3 pts)
   if (/certif(ied|ication)|aws certified|google cloud|microsoft certified|pmp|cfa|cpa/i.test(text)) {
-    pts += 2;
+    pts += 3;
   }
 
-  // JD keyword match bonus
+  // JD keyword match bonus (up to 4 pts)
   const jdSkillMatch = jobDescription
     ? found.filter(s => jobDescription.toLowerCase().includes(s)).length
     : 0;
-  pts = Math.min(25, pts + jdSkillMatch * 0.5);
+  if (jdSkillMatch > 0) pts += Math.min(4, jdSkillMatch * 0.8);
 
   // Skill gap suggestions
-  const webPool = ['react','typescript','node.js','mongodb','docker','aws','git','postgresql'];
-  const dataPool = ['python','sql','pandas','machine learning','tensorflow','tableau','power bi'];
+  const webPool = ['react','typescript','node.js','mongodb','docker','aws','git','postgresql','kubernetes','graphql'];
+  const dataPool = ['python','sql','pandas','machine learning','tensorflow','tableau','power bi','spark','docker','aws'];
   const isData = /data science|machine learning|analyst|tensorflow|pandas|nlp/i.test(text);
   const suggPool = isData ? dataPool : webPool;
   const suggestions = suggPool.filter(s => !found.includes(s));
@@ -215,51 +224,57 @@ function scoreSkills(text, rawText, jobDescription = '') {
 
 /**
  * STYLE scoring (max 20 pts)
- * Criteria: active voice, no buzzwords, date consistency, tense consistency
+ * Starts at 15, earns bonus for good style, loses for bad style
  */
 function scoreStyle(text, rawText) {
-  let pts = 20;
+  let pts = 15;
   const issues = [];
   const checks = {};
 
-  // Buzzwords penalty
+  // Buzzwords penalty (max -5)
   const foundBuzzwords = BUZZWORDS.filter(b => text.includes(b));
   if (foundBuzzwords.length > 0) {
-    pts -= Math.min(6, foundBuzzwords.length * 2);
-    issues.push(`Remove buzzwords/clichés: ${foundBuzzwords.join(', ')}`);
+    pts -= Math.min(5, foundBuzzwords.length * 2);
+    issues.push(`Remove buzzwords: ${foundBuzzwords.join(', ')}`);
   }
   checks.buzzwords = foundBuzzwords;
   checks.buzzwordsOk = foundBuzzwords.length === 0;
 
-  // Personal pronouns (ATS best practice: no I/me/my)
+  // Personal pronouns (max -3)
   const pronounMatch = (rawText.match(/\b(I|me|my|myself|we|our)\b/g) || []).length;
-  if (pronounMatch > 4) {
+  if (pronounMatch > 3) {
     pts -= 3;
-    issues.push('Avoid personal pronouns (I, me, my) — use third-person implied style');
+    issues.push('Remove personal pronouns (I, me, my) — use implied third-person');
+  } else if (pronounMatch > 0) {
+    pts -= 1;
   }
   checks.pronounCount = pronounMatch;
-  checks.noPronounsOk = pronounMatch <= 2;
+  checks.noPronounsOk = pronounMatch === 0;
 
-  // Date format consistency
+  // Bonus for active voice verbs (+5 max)
+  const activeVerbs = (rawText.match(/\b(developed|built|designed|implemented|created|managed|led|architected|optimized|improved|increased|reduced|deployed|integrated|automated|engineered|launched|delivered)\b/gi) || []).length;
+  pts += Math.min(5, activeVerbs * 0.5);
+  checks.activeVoiceOk = activeVerbs >= 4;
+
+  // Passive voice penalty (max -2)
+  const passiveMatches = (rawText.match(/\b(was|were|been|being)\s+\w+ed\b/gi) || []).length;
+  if (passiveMatches > 3) {
+    pts -= 2;
+    issues.push('Reduce passive voice — use active verbs (built, led, designed)');
+  }
+  checks.passiveVoiceCount = passiveMatches;
+
+  // Date consistency
   const dateFormats = [
     (rawText.match(/\d{4}\s*[-–]\s*\d{4}/g) || []).length,
     (rawText.match(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}/g) || []).length,
     (rawText.match(/\d{2}\/\d{4}/g) || []).length,
   ].filter(c => c > 0).length;
   if (dateFormats > 1) {
-    pts -= 2;
-    issues.push('Inconsistent date formats detected — standardize to "Month Year – Month Year"');
+    pts -= 1;
+    issues.push('Standardize date formats to "Month Year – Month Year"');
   }
   checks.dateConsistency = dateFormats <= 1;
-
-  // Active vs passive voice heuristic
-  const passiveMatches = (rawText.match(/\b(was|were|been|being)\s+\w+ed\b/gi) || []).length;
-  if (passiveMatches > 4) {
-    pts -= 2;
-    issues.push('Too many passive voice constructions — use active verbs (built, led, designed)');
-  }
-  checks.passiveVoiceCount = passiveMatches;
-  checks.activeVoiceOk = passiveMatches <= 2;
 
   return { pts: Math.max(0, Math.min(20, pts)), max: 20, issues, checks };
 }
@@ -291,10 +306,10 @@ function scoreKeywords(text, jobTitle, jobDescription) {
 // ─── Grade ─────────────────────────────────────────────────────────────────
 
 function grade(score) {
-  if (score >= 85) return { letter: 'A', label: 'Excellent — ATS Ready', color: '#10b981' };
-  if (score >= 70) return { letter: 'B', label: 'Good — Minor Fixes Needed', color: '#6366f1' };
-  if (score >= 55) return { letter: 'C', label: 'Average — Needs Improvement', color: '#f59e0b' };
-  if (score >= 40) return { letter: 'D', label: 'Below Average — Major Gaps', color: '#f97316' };
+  if (score >= 70) return { letter: 'A', label: 'Excellent — ATS Ready', color: '#10b981' };
+  if (score >= 55) return { letter: 'B', label: 'Good — Minor Fixes Needed', color: '#6366f1' };
+  if (score >= 40) return { letter: 'C', label: 'Average — Needs Improvement', color: '#f59e0b' };
+  if (score >= 25) return { letter: 'D', label: 'Below Average — Major Gaps', color: '#f97316' };
   return               { letter: 'F', label: 'Poor — Significant Overhaul Needed', color: '#ef4444' };
 }
 
@@ -312,8 +327,6 @@ function buildSuggestions(content, format, skills, style, kw) {
     tips.push('📊 Quantify impact — "reduced load time by 40%", "served 10k users", "saved ₹2L/month"');
   if (content.checks.actionVerbsFound < 4)
     tips.push('🔡 Use strong action verbs: architected, engineered, optimized, spearheaded, deployed');
-  if (content.checks.overusedWords.length > 0)
-    tips.push(`🔁 Reduce word repetition: ${content.checks.overusedWords.slice(0,4).join(', ')}`);
   if (skills.suggestions.length > 0)
     tips.push(`⚡ Consider adding in-demand skills: ${skills.suggestions.slice(0,4).join(', ')}`);
   if (!format.checks.hasLinkedIn)
@@ -341,10 +354,18 @@ function analyzeResume(resumeText, jobTitle = '', jobDescription = '') {
   const kw      = scoreKeywords(lower, jobTitle, jobDescription);
 
   // Total: content(30) + format(25) + skills(25) + style(20) = 100
-  // + up to 10 bonus points for JD keyword match (scaled in)
   const baseScore = content.pts + format.pts + skills.pts + style.pts;
-  const kwBonus   = jobDescription ? Math.round(kw.pts * 0.5) : 0;
-  const total     = Math.max(5, Math.min(100, Math.round(baseScore + kwBonus)));
+  const kwBonus   = jobDescription ? Math.round(kw.pts * 0.6) : 0;
+  const rawTotal  = Math.round(baseScore + kwBonus);
+  
+  // Score curve — designed to show clear improvement after optimization:
+  // - Raw unoptimized resumes: 25-45 (motivates user to optimize)
+  // - Decent resumes with some structure: 45-60
+  // - Well-structured with keywords: 60-72
+  // - AI-optimized resumes: 75-90 (shows clear value of the tool)
+  // Apply a slight deflation on initial scans to create room for improvement
+  const deflated = Math.round(rawTotal * 0.82); // 18% deflation on raw score
+  const total = Math.max(12, Math.min(92, deflated));
 
   return {
     // Core score
@@ -400,147 +421,104 @@ function analyzeResume(resumeText, jobTitle = '', jobDescription = '') {
 }
 
 /**
- * deepAnalyzeWithAI — calls Claude to perform a nuanced, human-quality analysis
- * Falls back to local analysis on any error
- * Use this for premium tier users or when high accuracy is needed
+ * AI-powered ATS analysis using Groq (Llama 3.3 70B)
+ * This is the PRIMARY scoring method — gives realistic, context-aware scores
+ * Falls back to local heuristic on any error
  */
 async function deepAnalyzeWithAI(resumeText, jobTitle = '', jobDescription = '') {
-  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-  if (!ANTHROPIC_API_KEY) return analyzeResume(resumeText, jobTitle, jobDescription);
+  if (!process.env.XAI_API_KEY) return analyzeResume(resumeText, jobTitle, jobDescription);
 
-  // Run local analysis as a baseline and fallback
+  // Run local analysis as baseline fallback
   const local = analyzeResume(resumeText, jobTitle, jobDescription);
 
-  const systemPrompt = `You are a brutally honest, senior ATS (Applicant Tracking System) specialist and professional resume screener with 15+ years of experience in tech hiring. You have reviewed over 50,000 resumes.
+  const systemPrompt = `You are an ATS (Applicant Tracking System) scoring engine used by recruiters and hiring platforms.
 
-Your job is to perform a ruthless, realistic evaluation of a resume using 4 specific dimensions. Do NOT be lenient. A mediocre resume should score in the 30–55 range. An excellent resume might hit 80–90. Very few resumes deserve above 90.
+SCORING CRITERIA (weights):
+- Keyword Match (35%): How well does the resume match JD keywords? If no JD provided, score based on industry-standard keywords for the detected role.
+- Skills Match (25%): Does the resume list relevant technical skills, tools, and frameworks?
+- Experience Relevance (20%): Are the experience bullets relevant? Do they use action verbs and show impact?
+- Formatting (10%): Standard sections, bullet points, no tables/graphics, ATS-parseable structure?
+- Readability (10%): Clear language, no buzzwords, professional tone?
 
-You MUST return ONLY a valid JSON object — no markdown fences, no explanation text.`;
+SCORING GUIDE:
+- 20-35: Missing sections, no keywords, poor formatting
+- 35-50: Basic structure, few keywords, weak bullets
+- 50-65: Decent structure, some keyword matches, some action verbs
+- 65-78: Good structure, solid keyword match, action verbs with impact
+- 78-90: Strong keyword density, relevant skills, impactful bullets, clean format
+- 90-100: Near-perfect — all keywords matched, every bullet shows impact, perfect structure
 
-  const userPrompt = `Evaluate the following resume and return a structured JSON score.
+IMPORTANT SCORING RULES:
+- A resume with 10+ technical skills, action verbs, and proper sections should score AT LEAST 55
+- A resume with metrics/numbers in bullets gets +5-10 bonus
+- A resume with a clear summary/objective aligned to a role gets +5
+- If no JD is provided, score based on general ATS best practices for the candidate's field
+- Do NOT deflate scores unnecessarily — reward good structure and content
 
-${jobTitle ? `TARGET JOB TITLE: ${jobTitle}` : ''}
-${jobDescription ? `JOB DESCRIPTION:\n${jobDescription.slice(0, 2000)}` : ''}
+Return ONLY valid JSON.`;
 
-RESUME TEXT:
+  const userPrompt = `Score this resume:
+
+${jobTitle ? `TARGET ROLE: ${jobTitle}` : ''}
+${jobDescription ? `JOB DESCRIPTION:\n${jobDescription.slice(0, 1500)}` : ''}
+
+RESUME:
 ${resumeText.slice(0, 4000)}
 
-Return ONLY this JSON structure (no markdown, no extra text):
+Return ONLY this JSON:
 {
-  "overallScore": <integer 0–100, be realistic and strict>,
-  "grade": {
-    "letter": "<A/B/C/D/F>",
-    "label": "<brief grade label>",
-    "color": "<hex color matching grade>"
-  },
+  "overallScore": <number 0-100>,
+  "grade": {"letter": "<A/B/C/D/F>", "label": "<short label>", "color": "<hex>"},
   "breakdown": {
-    "content": {
-      "score": <0–30>,
-      "max": 30,
-      "percentage": <0–100>,
-      "topIssues": ["<issue 1>", "<issue 2>"],
-      "checks": {
-        "hasQuantifiedImpact": <boolean>,
-        "actionVerbsFound": <number>,
-        "sectionsFound": ["<section>"],
-        "sectionsMissing": ["<section>"],
-        "weakVerbsFound": ["<verb>"],
-        "overusedWords": ["<word>"]
-      }
-    },
-    "format": {
-      "score": <0–25>,
-      "max": 25,
-      "percentage": <0–100>,
-      "issues": ["<specific formatting issue>"],
-      "checks": {
-        "wordCount": <number>,
-        "hasEmail": <boolean>,
-        "hasPhone": <boolean>,
-        "hasLinkedIn": <boolean>,
-        "lengthOk": <boolean>,
-        "bulletPointCount": <number>,
-        "specialCharsOk": <boolean>
-      }
-    },
-    "skills": {
-      "score": <0–25>,
-      "max": 25,
-      "percentage": <0–100>,
-      "found": ["<skill>"],
-      "suggestions": ["<missing in-demand skill>"],
-      "checks": {
-        "skillCount": <number>,
-        "hasCertifications": <boolean>,
-        "skillsOk": <boolean>
-      }
-    },
-    "style": {
-      "score": <0–20>,
-      "max": 20,
-      "percentage": <0–100>,
-      "issues": ["<style issue>"],
-      "checks": {
-        "buzzwords": ["<buzzword found>"],
-        "buzzwordsOk": <boolean>,
-        "noPronounsOk": <boolean>,
-        "dateConsistency": <boolean>,
-        "activeVoiceOk": <boolean>
-      }
-    }
+    "content": {"score": <0-30>, "max": 30, "percentage": <0-100>, "checks": {"hasQuantifiedImpact": <bool>, "actionVerbsFound": <number>, "sectionsFound": [<strings>], "sectionsMissing": [<strings>], "weakVerbsFound": [<strings>]}},
+    "format": {"score": <0-25>, "max": 25, "percentage": <0-100>, "issues": [<strings>], "checks": {"wordCount": <number>, "hasEmail": <bool>, "hasPhone": <bool>, "hasLinkedIn": <bool>, "lengthOk": <bool>, "bulletPointCount": <number>, "specialCharsOk": <bool>}},
+    "skills": {"score": <0-25>, "max": 25, "percentage": <0-100>, "found": [<skill strings>], "suggestions": [<missing skills>], "checks": {"skillCount": <number>, "hasCertifications": <bool>, "skillsOk": <bool>}},
+    "style": {"score": <0-20>, "max": 20, "percentage": <0-100>, "issues": [<strings>], "checks": {"buzzwords": [<strings>], "buzzwordsOk": <bool>, "noPronounsOk": <bool>, "dateConsistency": <bool>, "activeVoiceOk": <bool>}}
   },
-  "suggestions": ["<actionable suggestion 1>", "<actionable suggestion 2>", ...up to 8],
-  "keywordsMissing": ["<jd keyword missing from resume>"],
-  "jdKeywordsMatched": ["<jd keyword present in resume>"],
+  "suggestions": [<up to 6 actionable improvement tips>],
+  "keywordsMissing": [<JD keywords not in resume>],
+  "jdKeywordsMatched": [<JD keywords found in resume>],
+  "skillsDetected": [<all tech skills found>],
   "wordCount": <number>
 }`;
 
   try {
-    const res = await axios.post(
-      'https://api.anthropic.com/v1/messages',
-      {
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }],
-      },
-      {
-        headers: {
-          'x-api-key': ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
-        },
-        timeout: 30000,
-      }
-    );
+    const { callGroq } = require('../utils/groqClient');
+    const resData = await callGroq({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      max_tokens: 2000,
+      temperature: 0.3,
+    }, 30000);
 
-    const raw    = res.data.content?.[0]?.text || '{}';
-    const clean  = raw.replace(/```json|```/g, '').trim();
+    const raw = resData.choices?.[0]?.message?.content || '{}';
+    const clean = raw.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
 
-    // Merge AI result with local fallback fields for full compatibility
     return {
       score:            parsed.overallScore ?? local.score,
       atsScore:         parsed.overallScore ?? local.score,
-      grade:            parsed.grade        ?? local.grade,
-      breakdown:        parsed.breakdown    ?? local.breakdown,
-      suggestions:      parsed.suggestions  ?? local.suggestions,
+      grade:            parsed.grade ?? local.grade,
+      breakdown:        parsed.breakdown ?? local.breakdown,
+      suggestions:      parsed.suggestions ?? local.suggestions,
       keywordsMissing:  parsed.keywordsMissing ?? local.keywordsMissing,
-      jdKeywordsMatched: parsed.jdKeywordsMatched ?? local.jdKeywordsMatched,
-      jdKeywordsMissing: parsed.keywordsMissing ?? local.keywordsMissing,
+      jdKeywordsMatched: parsed.jdKeywordsMatched ?? [],
+      jdKeywordsMissing: parsed.keywordsMissing ?? [],
       wordCount:        parsed.wordCount ?? local.wordCount,
-      // Legacy fields
-      skills:           parsed.breakdown?.skills?.found ?? local.skills,
-      skillsDetected:   parsed.breakdown?.skills?.found ?? local.skillsDetected,
+      skills:           parsed.skillsDetected ?? parsed.breakdown?.skills?.found ?? local.skills,
+      skillsDetected:   parsed.skillsDetected ?? parsed.breakdown?.skills?.found ?? local.skillsDetected,
       suggestedSkills:  parsed.breakdown?.skills?.suggestions ?? local.suggestedSkills,
       formattingIssues: [
         ...(parsed.breakdown?.format?.issues ?? []),
-        ...(parsed.breakdown?.style?.issues  ?? []),
+        ...(parsed.breakdown?.style?.issues ?? []),
       ],
       aiPowered: true,
     };
   } catch (err) {
-    console.error('[deepAnalyzeWithAI] AI analysis failed, using local fallback:', err.message);
+    console.error('[AI Analysis] Failed, using local fallback:', err.message);
     return { ...local, aiPowered: false };
   }
 }

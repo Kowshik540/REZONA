@@ -16,11 +16,12 @@ const PLANS = [
     tag: null,
     color: '#6366f1',
     features: [
-      'ATS Score & Analysis (5 scans/mo)',
-      'Instant Resume Upload (PDF)',
-      'Standard Resume Templates (3)',
-      'Basic Keyword Mirroring Check',
-      'Job Recommendations (10/day)',
+      'ATS Score Check — 10 scans/month',
+      'Resume Tailoring — 10 times/month',
+      'Resume Upload (PDF)',
+      '6 Resume Templates',
+      'Cover Letter Generator (10/mo)',
+      'Job Recommendations',
     ],
   },
   {
@@ -29,32 +30,70 @@ const PLANS = [
     price: { monthly: 249, yearly: 179 },
     yearlyTotal: 2148,
     saving: 28,
-    tag: 'Most Popular',
+    tag: null,
     color: '#f59e0b',
     features: [
-      'Everything in Starter',
-      'Unlimited ATS Analysis Scans',
-      'Instant AI Resume Tailoring (25/mo)',
-      'Deep Job-Description Matching',
-      'Premium Custom Templates (10)',
-      'Priority Email Support',
+      'ATS Score Check — 25 scans/month',
+      'Resume Tailoring — 25 times/month',
+      '6 Resume Templates',
+      'Cover Letter Generator (25/mo)',
+      'Job Recommendations',
+      'PDF Download',
     ],
   },
   {
     id: 'growth',
-    label: 'Elite Executive',
+    label: 'Growth',
     price: { monthly: 499, yearly: 339 },
     yearlyTotal: 4068,
     saving: 32,
-    tag: 'Best Value',
+    tag: null,
+    color: '#10b981',
+    features: [
+      'ATS Score Check — 50 scans/month',
+      'Resume Tailoring — 50 times/month',
+      '6 Resume Templates',
+      'Cover Letter Generator (50/mo)',
+      'Job Recommendations',
+      'PDF Download',
+    ],
+  },
+  {
+    id: 'elite',
+    label: 'Elite',
+    price: { monthly: 999, yearly: 699 },
+    yearlyTotal: 8388,
+    saving: 30,
+    tag: 'Most Popular',
     color: '#ec4899',
     features: [
-      'Everything in Pro Plan',
-      'Unlimited Structural Customizations',
-      'Full Sector Keyword Matrix Matching',
-      'Cover Letter Generator Setup',
-      'Manual Resume Strategy Consult',
-      '24/7 Priority Chat Access',
+      'ATS Score Check — 150 scans/month',
+      'Resume Tailoring — 150 times/month',
+      '14 Premium Resume Templates',
+      'Cover Letter Generator (Unlimited)',
+      'ATS Constraint Optimization',
+      'Keyword Density Analysis',
+      'Exact-Match JD Phrase Injection',
+      'Skills Categorization (by type)',
+    ],
+  },
+  {
+    id: 'exclusive',
+    label: 'Exclusive',
+    price: { monthly: 1999, yearly: 1399 },
+    yearlyTotal: 16788,
+    saving: 30,
+    tag: 'Best Value',
+    color: '#8b5cf6',
+    features: [
+      'ATS Score Check — 500 scans/month',
+      'Resume Tailoring — 500 times/month',
+      '22 Premium Resume Templates',
+      'All Elite Features +',
+      'Verb+Context Syntax Optimization',
+      'Acronym & Full-Term Expansion',
+      'Timeline Format Correction',
+      'ATS Parser Constraint Compliance',
     ],
   },
 ];
@@ -112,7 +151,7 @@ const PricingCard = ({ plan, billing }) => {
       </ul>
 
       <Link
-        to="/register"
+        to="/pricing"
         className="plan-action-btn"
         style={{ 
           backgroundColor: plan.tag ? plan.color : 'var(--bg-surface-card)',
@@ -152,8 +191,9 @@ const Home = () => {
     formData.append('resume', file);
 
     try {
-      const res = await api.post('/resumes/quick-scan', formData, {
+      const res = await api.post('/resume/quick-scan', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000,
       });
       setQuickResult(res.data);
     } catch (err) {
@@ -215,7 +255,7 @@ const Home = () => {
               <div className="dropzone-default-view">
                 <div className="document-icon">📄</div>
                 <p className="primary-text"><strong>Drag and drop your resume file</strong> or browse local directories</p>
-                <p className="secondary-text">Accepts PDF files up to 5MB</p>
+                <p className="secondary-text">Accepts PDF files up to 10MB</p>
                 <button type="button" className="browse-trigger-btn" onClick={triggerBrowse}>Select Document</button>
               </div>
             )}

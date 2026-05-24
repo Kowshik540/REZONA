@@ -6,6 +6,7 @@ import api from '../utils/api';
 import JobRecommendations from '../components/JobRecommendations';
 import TailorResumeModal from '../components/TailorResumeModal';
 import TemplatePickerModal from '../components/TemplatePickerModal';
+import CreateResumeModal from '../components/CreateResumeModal';
 import './Dashboard.css';
 
 const ScoreCircle = ({ score }) => {
@@ -91,7 +92,7 @@ const Dashboard = () => {
 
   const [showTailorModal, setShowTailorModal] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
-  const [tailoredResult, setTailoredResult] = useState(null);
+  const [showCreateResume, setShowCreateResume] = useState(false);
   const [tailoredJobTitle, tailoredJobTitleSet] = useState('');
   const [tailoredJobDesc, tailoredJobDescSet] = useState('');
 
@@ -120,6 +121,7 @@ const Dashboard = () => {
     try {
       const { data } = await api.post('/resume/analyze', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000, // 2 minutes for upload + analysis
       });
       await fetchResumes();
       setSelectedResume({
@@ -132,7 +134,12 @@ const Dashboard = () => {
       });
       setActiveTab('analysis');
     } catch (err) {
-      setUploadError(err.response?.data?.error || 'Could not parse the file.');
+      const errData = err.response?.data;
+      if (errData?.limitReached) {
+        setUploadError(`⚠️ ${errData.error} [${errData.currentPlan} plan — ${errData.used}/${errData.limit} used]`);
+      } else {
+        setUploadError(errData?.error || 'Could not parse the file.');
+      }
     }
     setUploading(false);
   };
@@ -153,11 +160,21 @@ const Dashboard = () => {
     onDrop,
     accept: { 'application/pdf': ['.pdf'] },
     maxFiles: 1,
+    maxSize: 10 * 1024 * 1024, // 10 MB
     disabled: uploading,
+    onDropRejected: (fileRejections) => {
+      const error = fileRejections[0]?.errors[0];
+      if (error?.code === 'file-too-large') {
+        setUploadError('File too large. Maximum allowed size is 10 MB.');
+      } else if (error?.code === 'file-invalid-type') {
+        setUploadError('Only PDF files are accepted.');
+      } else {
+        setUploadError(error?.message || 'File rejected.');
+      }
+    },
   });
 
   const handleTailored = (result, jobTitle, jobDesc) => {
-    setTailoredResult(result);
     tailoredJobTitleSet(jobTitle);
     tailoredJobDescSet(jobDesc);
     setShowTemplatePicker(true);
@@ -262,7 +279,17 @@ const Dashboard = () => {
               </div>
               <div className="header-actions-area">
                 <button className="workspace-primary-btn" onClick={() => setShowTailorModal(true)}>
-                  Tailor to a Job Description
+                  ✂️ Tailor to a Job
+                </button>
+                <button className="workspace-secondary-btn" onClick={() => {
+                  tailoredJobTitleSet('');
+                  tailoredJobDescSet('');
+                  setShowTemplatePicker(true);
+                }}>
+                  ⚡ Optimize ATS
+                </button>
+                <button className="workspace-secondary-btn" onClick={() => setShowCreateResume(true)}>
+                  📝 Create New
                 </button>
                 <ScoreCircle score={selectedResume.atsScore || 0} />
               </div>
@@ -414,8 +441,39 @@ const Dashboard = () => {
         ) : (
           <div className="workspace-blank-state">
             <span className="blank-state-icon">📄</span>
-            <h3>No Resume Active</h3>
-            <p>Select a saved resume from the left sidebar or upload a new PDF file to inspect scores.</p>
+            <h3>Welcome to Rezona</h3>
+            <p style={{ marginBottom: 24 }}>AI-powered resume optimization platform. Upload your resume or create one from scratch.</p>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 500, margin: '0 auto 24px' }}>
+              <div style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 12, padding: 20, textAlign: 'center' }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>📊</div>
+                <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>ATS Score Check</h4>
+                <p style={{ fontSize: 12, color: '#94a3b8' }}>Upload your PDF and get an instant ATS compatibility score with detailed breakdown</p>
+              </div>
+              <div style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 12, padding: 20, textAlign: 'center' }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>✂️</div>
+                <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Tailor to Job</h4>
+                <p style={{ fontSize: 12, color: '#94a3b8' }}>Paste a job description and get your resume rewritten to match the role perfectly</p>
+              </div>
+              <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 12, padding: 20, textAlign: 'center' }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>📝</div>
+                <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Create Resume</h4>
+                <p style={{ fontSize: 12, color: '#94a3b8' }}>Don't have a resume? Fill in your details and we'll generate a professional one</p>
+              </div>
+              <div style={{ background: 'rgba(236,72,153,0.08)', border: '1px solid rgba(236,72,153,0.2)', borderRadius: 12, padding: 20, textAlign: 'center' }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>💼</div>
+                <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Job Matching</h4>
+                <p style={{ fontSize: 12, color: '#94a3b8' }}>Get real job recommendations from LinkedIn, Naukri, Indeed matched to your skills</p>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setShowCreateResume(true)}
+              style={{ padding: '12px 28px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', marginRight: 12 }}
+            >
+              📝 Create Resume from Scratch
+            </button>
+            <span style={{ color: '#64748b', fontSize: 13 }}>or upload a PDF from the sidebar</span>
           </div>
         )}
       </main>
@@ -429,13 +487,20 @@ const Dashboard = () => {
         />
       )}
 
-      {showTemplatePicker && tailoredResult && (
+      {showTemplatePicker && (
         <TemplatePickerModal
-          tailoredResult={tailoredResult}
+          resumeId={selectedResume?._id}
           jobTitle={tailoredJobTitle}
           jobDescription={tailoredJobDesc}
-          originalResume={selectedResume}
-          onClose={() => { setShowTemplatePicker(false); setTailoredResult(null); }}
+          skills={analysis.skillsDetected || []}
+          onClose={() => setShowTemplatePicker(false)}
+        />
+      )}
+
+      {showCreateResume && (
+        <CreateResumeModal
+          onClose={() => setShowCreateResume(false)}
+          onCreated={() => { fetchResumes(); setShowCreateResume(false); }}
         />
       )}
     </div>

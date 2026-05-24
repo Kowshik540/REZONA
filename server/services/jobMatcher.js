@@ -35,16 +35,20 @@ const SKILL_WEIGHTS = {
 async function fetchJobs(resumeSkills = [], jobTitle = '', city = '', filters = {}) {
   const query = buildQuery(resumeSkills, jobTitle);
 
-  const [adzuna, jsearch, remotive] = await Promise.allSettled([
+  const [adzuna, jsearch, remotive, unstop, arbeitnow] = await Promise.allSettled([
     fetchAdzuna(query, city),
     fetchJSearch(query, city),
     fetchRemotive(query),
+    fetchUnstop(query),
+    fetchArbeitnow(query),
   ]);
 
   const all = [
     ...(adzuna.status   === 'fulfilled' ? adzuna.value   : []),
     ...(jsearch.status  === 'fulfilled' ? jsearch.value  : []),
     ...(remotive.status === 'fulfilled' ? remotive.value : []),
+    ...(unstop.status   === 'fulfilled' ? unstop.value   : []),
+    ...(arbeitnow.status === 'fulfilled' ? arbeitnow.value : []),
   ];
 
   // Deduplicate
@@ -71,7 +75,7 @@ async function fetchJobs(resumeSkills = [], jobTitle = '', city = '', filters = 
   if (sortBy === 'date')   filtered.sort((a, b) => new Date(b.postedDate||0) - new Date(a.postedDate||0));
   if (sortBy === 'salary') filtered.sort((a, b) => (b.salaryNum||0) - (a.salaryNum||0));
 
-  return filtered.slice(0, 30);
+  return filtered.slice(0, 50);
 }
 
 // ─── Deep Match Scorer ────────────────────────────────────────────────────────
@@ -264,7 +268,58 @@ function detectPortal(url) {
   if (url.includes('shine'))       return 'Shine.com';
   if (url.includes('timesjobs'))   return 'TimesJobs';
   if (url.includes('internshala')) return 'Internshala';
+  if (url.includes('unstop'))      return 'Unstop';
   return 'Job Portal';
+}
+
+// ─── Unstop (Internships & Jobs for students) ─────────────────────────────────
+async function fetchUnstop(query) {
+  try {
+    const res = await axios.get('https://unstop.com/api/public/opportunity/search-new', {
+      params: { search: query, opportunity: 'jobs', per_page: 10 },
+      timeout: 8000,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+    });
+    const items = res.data?.data?.data || res.data?.data || [];
+    return items.slice(0, 10).map(j => ({
+      id:          `unstop-${j.id || j.slug}`,
+      title:       j.title || j.name || '',
+      company:     j.organisation?.name || j.company_name || 'Company',
+      location:    j.city || j.location || 'India',
+      description: (j.short_desc || j.description || '').replace(/<[^>]*>/g, '').slice(0, 500),
+      url:         j.public_url || `https://unstop.com/jobs/${j.slug || j.id}`,
+      salary:      j.stipend || j.salary || null,
+      salaryNum:   0,
+      postedDate:  j.start_date || j.created_at,
+      source:      'Unstop',
+      jobType:     j.type || 'Full-time',
+      remote:      (j.location || '').toLowerCase().includes('remote'),
+    }));
+  } catch (e) { return []; }
+}
+
+// ─── Arbeitnow (Free job board API — tech jobs worldwide) ─────────────────────
+async function fetchArbeitnow(query) {
+  try {
+    const res = await axios.get('https://www.arbeitnow.com/api/job-board-api', {
+      params: { search: query, page: 1 },
+      timeout: 8000,
+    });
+    return (res.data?.data || []).slice(0, 10).map(j => ({
+      id:          `arbeitnow-${j.slug}`,
+      title:       j.title || '',
+      company:     j.company_name || '',
+      location:    j.location || 'Remote',
+      description: (j.description || '').replace(/<[^>]*>/g, '').slice(0, 500),
+      url:         j.url,
+      salary:      null,
+      salaryNum:   0,
+      postedDate:  j.created_at,
+      source:      'Arbeitnow',
+      jobType:     'Full-time',
+      remote:      j.remote || false,
+    }));
+  } catch (e) { return []; }
 }
 
 module.exports = { fetchJobs };

@@ -76,6 +76,9 @@ const Login = () => {
           Don't have an account?{' '}
           <Link to="/register">Create one free →</Link>
         </p>
+        <p className="auth-footer" style={{ marginTop: 8 }}>
+          <Link to="/forgot-password">Forgot your password?</Link>
+        </p>
       </div>
     </div>
   );

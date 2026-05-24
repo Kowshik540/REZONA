@@ -13,18 +13,29 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Restore session on page load
+  // Verify token on page load — don't trust localStorage alone
   useEffect(() => {
-    const token = localStorage.getItem('rezona_token');
-    const savedUser = localStorage.getItem('rezona_user');
-    if (token && savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch {
-        localStorage.removeItem('rezona_user');
+    const verifySession = async () => {
+      const token = localStorage.getItem('rezona_token');
+      if (!token) {
+        setLoading(false);
+        return;
       }
-    }
-    setLoading(false);
+
+      try {
+        const { data } = await api.get('/auth/me');
+        setUser(data.user);
+        localStorage.setItem('rezona_user', JSON.stringify(data.user));
+      } catch (err) {
+        // Token invalid or expired — clear session
+        localStorage.removeItem('rezona_token');
+        localStorage.removeItem('rezona_user');
+        setUser(null);
+      }
+      setLoading(false);
+    };
+
+    verifySession();
   }, []);
 
   const login = async (email, password) => {

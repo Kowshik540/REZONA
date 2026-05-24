@@ -1,7 +1,7 @@
 const express = require('express');
 const auth = require('../middleware/auth');
 const Resume = require('../models/Resume');
-const jobMatcher = require('../services/jobMatcher');
+const { fetchJobs } = require('../services/jobMatcher');
 const router = express.Router();
 
 // GET /api/jobs/suggestions/:resumeId?location=India
@@ -17,43 +17,34 @@ router.get('/suggestions/:resumeId', auth, async (req, res) => {
     }
 
     const skills = resume.analysis?.skillsDetected || [];
-    // Default to India — pass ?location=... in query to override
     const location = req.query.location || 'India';
-    const limit = parseInt(req.query.limit) || 20;
 
-    console.log(`🔍 Finding jobs for skills: [${skills.join(', ')}] | location: ${location}`);
-
-    const jobs = await jobMatcher.getJobRecommendations(skills, location, limit);
-
-    // Save to resume for caching
-    resume.suggestedJobs = jobs;
-    await resume.save();
+    const jobs = await fetchJobs(skills, '', location);
 
     res.json({
       success: true,
       count: jobs.length,
       jobs,
-      message: `Found ${jobs.length} real job matches!`
     });
   } catch (error) {
     console.error('Job suggestions error:', error.message);
     res.status(500).json({
-      error: 'Job search failed',
-      jobs: jobMatcher.getFallbackJobs()
+      error: 'Could not fetch jobs. Please try again.',
+      jobs: [],
     });
   }
 });
 
-// GET /api/jobs/search?q=react,nodejs&location=India&limit=20
+// GET /api/jobs/search?q=react,nodejs&location=India
 router.get('/search', auth, async (req, res) => {
   try {
-    const { q = 'developer', location = 'India', limit = 20 } = req.query;
+    const { q = 'developer', location = 'India' } = req.query;
     const skills = q.split(',').map(s => s.trim()).filter(Boolean);
 
-    const jobs = await jobMatcher.getJobRecommendations(skills, location, parseInt(limit));
+    const jobs = await fetchJobs(skills, '', location);
     res.json({ success: true, count: jobs.length, jobs });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Could not fetch jobs. Please try again.', jobs: [] });
   }
 });
 

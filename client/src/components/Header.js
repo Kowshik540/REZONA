@@ -26,13 +26,24 @@ const Header = () => {
               <Link to="/dashboard" className={location.pathname === '/dashboard' ? 'active' : ''}>
                 Dashboard
               </Link>
-              <span className="nav-user">👋 {user.name || user.email}</span>
+              <Link to="/cover-letter" className={location.pathname === '/cover-letter' ? 'active' : ''}>
+                Cover Letter
+              </Link>
+              <Link to="/pricing" className={location.pathname === '/pricing' ? 'active' : ''}>
+                Pricing
+              </Link>
+              <Link to="/profile" className={location.pathname === '/profile' ? 'active' : ''}>
+                👤 {user.name || 'Profile'}
+              </Link>
               <button onClick={handleLogout} className="btn-logout">
                 Logout
               </button>
             </>
           ) : (
             <>
+              <Link to="/pricing" className={location.pathname === '/pricing' ? 'active' : ''}>
+                Pricing
+              </Link>
               <Link to="/login" className={location.pathname === '/login' ? 'active' : ''}>
                 Login
               </Link>
