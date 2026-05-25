@@ -377,7 +377,25 @@ async function generateFullResume(resumeText, jobTitle, jobDescription, template
     throw new Error('XAI_API_KEY not set');
   }
 
+  // Detect if this is a real JD tailoring or generic optimization
+  const isRealJD = jobDescription && jobDescription.length > 100 && !jobDescription.includes('Create a highly ATS-optimized');
+  
+  const tailoringInstruction = isRealJD 
+    ? `CRITICAL: This resume is being TAILORED for a SPECIFIC job. You MUST:
+- Rewrite the summary to directly address the requirements in the job description below
+- Reorder skills to put JD-matching skills FIRST
+- Rewrite experience bullets to emphasize skills/technologies mentioned in the JD
+- Use EXACT phrases from the job description in your bullets
+- The resume should read as if written SPECIFICALLY for this one job posting
+- A recruiter should immediately see this candidate is a PERFECT match for THIS role`
+    : `This is a GENERAL optimization. Make the resume strong for any role in the candidate's field.
+- Write a broad professional summary highlighting their strongest skills
+- Keep skills in logical order (languages, frameworks, tools, methodologies)
+- Write impactful bullets that showcase versatility`;
+
   const prompt = `You are the world's #1 resume generation engine used by top career services at Harvard, Stanford, and McKinsey. You produce resumes that score 90+ on ATS systems and get candidates interviews at FAANG companies.
+
+${tailoringInstruction}
 
 === YOUR MISSION ===
 Take the candidate's raw resume data and produce a COMPLETE, RICH, PROFESSIONAL resume that fills an entire A4 page. The output must be significantly more detailed and polished than the input.
@@ -477,7 +495,7 @@ ${resumeText.slice(0, 4500)}
       { role: 'user', content: prompt },
     ],
     max_tokens: 4000,
-    temperature: 0.4,
+    temperature: isRealJD ? 0.6 : 0.4,
   }, 60000);
 
   const raw = data.choices?.[0]?.message?.content || '{}';
