@@ -709,46 +709,32 @@ function renderAllSections(doc, data, fmt, t, L, W, startY) {
   function body(text, opts={}) { cp(); doc.font(opts.bold?bFont:font).fontSize(opts.size||9.3).fillColor([0,0,0]); const h=doc.heightOfString(text,{width:W}); doc.text(text,L,y,{width:W}); y+=h+(opts.gap||4); }
   function bullet(text) { cp(); doc.font(font).fontSize(9.2).fillColor([0,0,0]); const sym=fmt%3===0?'-':fmt%3===1?'•':'▸'; doc.text(sym,L+4,y); const h=doc.heightOfString(text,{width:W-16}); doc.text(text,L+14,y,{width:W-16}); y+=h+3; }
 
-  // Vary section ORDER based on format
-  const expFirst = fmt % 5 === 0; // Every 5th format puts experience before skills
-
-  if (data.summary) { secTitle('Professional Summary'); body(data.summary, {gap:8}); }
-  
-  if (expFirst) {
-    renderExperience(); renderSkills();
-  } else {
-    renderSkills(); renderExperience();
-  }
-
-  function renderSkills() {
-    if (data.skills?.length) { secTitle('Technical Skills'); body(data.skills.join('  •  '), {gap:8}); }
-  }
-
+  function renderSummary() { if(data.summary){secTitle('Professional Summary');body(data.summary,{gap:8});} }
+  function renderSkills() { if(data.skills?.length){secTitle('Technical Skills');body(data.skills.join('  •  '),{gap:8});} }
   function renderExperience() {
-    if (data.experience?.length) {
-      secTitle('Professional Experience');
-      for (const exp of data.experience) {
-        cp();
-        const role = exp.company ? `${exp.role||''} | ${exp.company}` : (exp.role||'');
-        doc.font(bFont).fontSize(9.5).fillColor([0,0,0]).text(role, L, y, {width:W*0.72});
-        if (exp.duration) doc.font(font).fontSize(8.5).fillColor([60,60,60]).text(exp.duration, L, y, {width:W, align:'right'});
-        y += 13;
-        if (exp.bullets?.length) for (const b of exp.bullets) { if(b) bullet(b); }
-        y += 4;
-      }
-    }
+    if(!data.experience?.length) return;
+    secTitle('Professional Experience');
+    for(const exp of data.experience){cp();const role=exp.company?`${exp.role||''} | ${exp.company}`:(exp.role||'');doc.font(bFont).fontSize(9.5).fillColor([0,0,0]).text(role,L,y,{width:W*0.72});if(exp.duration)doc.font(font).fontSize(8.5).fillColor([60,60,60]).text(exp.duration,L,y,{width:W,align:'right'});y+=13;if(exp.bullets?.length)for(const b of exp.bullets){if(b)bullet(b);}y+=4;}
   }
+  function renderProjects() { if(!data.projects?.length)return;secTitle('Projects');for(const p of data.projects){cp();doc.font(bFont).fontSize(9.3).fillColor([0,0,0]).text(p.tech?`${p.name||''} | ${p.tech}`:(p.name||''),L,y,{width:W});y+=12;if(p.description)bullet(p.description);y+=2;} }
+  function renderEducation() { if(!data.education?.length)return;secTitle('Education');for(const e of data.education){cp();doc.font(bFont).fontSize(9.3).fillColor([0,0,0]).text(e.degree||'',L,y,{width:W*0.72});if(e.year)doc.font(font).fontSize(8.5).fillColor([60,60,60]).text(e.year,L,y,{width:W,align:'right'});y+=12;if(e.institution){doc.font(font).fontSize(8.5).fillColor([40,40,40]).text(e.institution,L,y,{width:W});y+=10;}if(e.details){doc.font(font).fontSize(8).fillColor([60,60,60]).text(e.details,L,y,{width:W});y+=10;}y+=2;} }
+  function renderAchievements() { if(data.achievements?.length){secTitle('Achievements');for(const a of data.achievements)bullet(a);} }
+  function renderCertifications() { if(data.certifications?.length){secTitle('Certifications');for(const c of data.certifications)bullet(c);} }
 
-  if (data.projects?.length) {
-    secTitle('Projects');
-    for (const p of data.projects) { cp(); doc.font(bFont).fontSize(9.3).fillColor([0,0,0]).text(p.tech?`${p.name||''} | ${p.tech}`:(p.name||''), L, y, {width:W}); y+=12; if(p.description) bullet(p.description); y+=2; }
+  // EACH FORMAT HAS A COMPLETELY DIFFERENT SECTION ORDER
+  switch(fmt) {
+    case 1: renderSummary();renderSkills();renderExperience();renderProjects();renderEducation();renderAchievements();renderCertifications(); break;
+    case 2: renderSummary();renderExperience();renderSkills();renderProjects();renderEducation();renderCertifications();renderAchievements(); break;
+    case 3: renderSummary();renderEducation();renderSkills();renderExperience();renderProjects();renderAchievements();renderCertifications(); break;
+    case 4: renderExperience();renderSkills();renderProjects();renderSummary();renderEducation();renderCertifications();renderAchievements(); break;
+    case 5: renderSummary();renderExperience();renderProjects();renderSkills();renderEducation();renderAchievements();renderCertifications(); break;
+    case 6: renderSkills();renderSummary();renderExperience();renderProjects();renderEducation();renderCertifications();renderAchievements(); break;
+    case 7: renderSummary();renderEducation();renderExperience();renderSkills();renderProjects();renderCertifications();renderAchievements(); break;
+    case 8: renderSummary();renderExperience();renderEducation();renderProjects();renderSkills();renderAchievements();renderCertifications(); break;
+    case 9: renderSummary();renderSkills();renderExperience();renderEducation();renderProjects();renderCertifications();renderAchievements(); break;
+    case 10: renderExperience();renderSummary();renderProjects();renderSkills();renderEducation();renderAchievements();renderCertifications(); break;
+    default: renderSummary();renderSkills();renderExperience();renderProjects();renderEducation();renderAchievements();renderCertifications();
   }
-  if (data.education?.length) {
-    secTitle('Education');
-    for (const e of data.education) { cp(); doc.font(bFont).fontSize(9.3).fillColor([0,0,0]).text(e.degree||'', L, y, {width:W*0.72}); if(e.year) doc.font(font).fontSize(8.5).fillColor([60,60,60]).text(e.year, L, y, {width:W, align:'right'}); y+=12; if(e.institution){doc.font(font).fontSize(8.5).fillColor([40,40,40]).text(e.institution,L,y,{width:W});y+=10;} if(e.details){doc.font(font).fontSize(8).fillColor([60,60,60]).text(e.details,L,y,{width:W});y+=10;} y+=2; }
-  }
-  if (data.achievements?.length) { secTitle('Achievements'); for (const a of data.achievements) bullet(a); }
-  if (data.certifications?.length) { secTitle('Certifications'); for (const c of data.certifications) bullet(c); }
 }
 
 module.exports = { generateFullResume, buildPdf, TEMPLATES };
