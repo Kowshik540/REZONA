@@ -570,13 +570,6 @@ function getFormatNumber(templateId, style) {
   return map[templateId] || 1;
 }
 
-function getFormatNumber(templateId) {
-  // Each of the 34 templates gets its own unique number (1-34)
-  const all = Object.keys(TEMPLATES);
-  const idx = all.indexOf(templateId);
-  return idx >= 0 ? idx + 1 : 1;
-}
-
 function renderHeader(doc, data, contact, fmt, t, L, W) {
   let y = 36;
   const name = data.name || 'Candidate';
