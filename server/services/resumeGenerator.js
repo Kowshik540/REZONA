@@ -586,7 +586,7 @@ function renderHeader(doc, data, contact, fmt, t, L, W) {
     const sizes = [22, 20, 24, 18];
     const fonts = ['Helvetica-Bold', 'Times-Bold', 'Helvetica-Bold', 'Courier-Bold'];
     doc.font(fonts[fmt-1]).fontSize(sizes[fmt-1]).fillColor([0,0,0]).text(fmt===3?name.toUpperCase():name, L, y, {width:W, align:'center'}); y+=sizes[fmt-1]+6;
-    if (contact.length) { doc.font(fonts[fmt-1].replace('-Bold','')||'Helvetica').fontSize(8.5).fillColor([40,40,40]).text(contact.join('  •  '), L, y, {width:W, align:'center'}); y+=13; }
+    if (contact.length) { doc.font(fonts[fmt-1]==='Times-Bold'?'Times-Roman':fonts[fmt-1]==='Courier-Bold'?'Courier':'Helvetica').fontSize(8.5).fillColor([40,40,40]).text(contact.join('  •  '), L, y, {width:W, align:'center'}); y+=13; }
     if (fmt===1) { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.5).stroke(); y+=12; }
     else if (fmt===2) { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(1.5).stroke(); y+=14; }
     else if (fmt===3) { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.8).stroke(); doc.moveTo(L,y+2.5).lineTo(L+W,y+2.5).strokeColor([0,0,0]).lineWidth(0.3).stroke(); y+=16; }
@@ -596,7 +596,7 @@ function renderHeader(doc, data, contact, fmt, t, L, W) {
     const fonts = ['Helvetica-Bold', 'Times-Bold', 'Helvetica-Bold', 'Courier-Bold'];
     const i = fmt-5;
     doc.font(fonts[i]).fontSize(sizes[i]).fillColor([0,0,0]).text(fmt===7?name.toUpperCase():name, L, y, {width:W}); y+=sizes[i]+6;
-    if (contact.length) { doc.font(fonts[i].replace('-Bold','')||'Helvetica').fontSize(8.5).fillColor([40,40,40]).text(contact.join(fmt%2===0?' | ':'  •  '), L, y, {width:W}); y+=13; }
+    if (contact.length) { doc.font(fonts[i]==='Times-Bold'?'Times-Roman':fonts[i]==='Courier-Bold'?'Courier':'Helvetica').fontSize(8.5).fillColor([40,40,40]).text(contact.join(fmt%2===0?' | ':'  •  '), L, y, {width:W}); y+=13; }
     if (fmt===5) { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.4).stroke(); y+=12; }
     else if (fmt===6) { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(1.2).stroke(); y+=14; }
     else if (fmt===7) { doc.moveTo(L,y).lineTo(L+W,y).strokeColor([0,0,0]).lineWidth(0.3).dash(4,{space:2}).stroke(); doc.undash(); y+=14; }
