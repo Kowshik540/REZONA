@@ -17,9 +17,15 @@ const { modifyResumeForJob} = require('../services/resumeModifier');
 const { generateFullResume, buildPdf, TEMPLATES } = require('../services/resumeGenerator');
 const { generateCoverLetter } = require('../services/coverLetterGenerator');
 const logger                = require('../utils/logger');
+const db                    = require('../utils/dbConnections');
 
 const router = express.Router();
 
+// Helper: find a resume record across all databases
+async function findResumeRecord(resumeId, userId) {
+  const result = await db.findResumeById(resumeId, userId);
+  return result ? result.resume : null;
+}
 // ─── Input Validation Constants ───────────────────────────────────────────────
 const MAX_JOB_TITLE_LENGTH = 200;
 const MAX_JOB_DESC_LENGTH = 5000;
@@ -117,11 +123,12 @@ router.post('/analyze', auth, checkUsage('scan'), (req, res, next) => {
     const analysis = await deepAnalyzeWithAI(resumeText, jobTitle, jobDescription);
     const jobs     = await fetchJobs(analysis.skills || analysis.skillsDetected || [], jobTitle, city);
 
-    const record = await Resume.create({
+    const { createResume } = require('../utils/dbConnections');
+    const record = await createResume({
       userId:     req.user.id,
       filename:   req.file.originalname,
       filepath:   req.file.path,
-      resumeText, // ✅ stored in schema now
+      resumeText,
       atsScore:   analysis.score,
       skills:     analysis.skills,
       analysis,
@@ -129,8 +136,8 @@ router.post('/analyze', auth, checkUsage('scan'), (req, res, next) => {
     });
 
     // Increment usage counter
-    const User = require('../models/User');
-    await User.findByIdAndUpdate(req.user.id, {
+    const { updateUserById } = require('../utils/dbConnections');
+    await updateUserById(req.user.id, {
       $inc: { 'usage.scansThisMonth': 1, 'usage.totalScans': 1 }
     });
 
@@ -181,19 +188,20 @@ router.post('/create-from-scratch', auth, checkUsage('tailor'), async (req, res)
     // Build PDF
     const pdfBuffer = await buildPdf(resumeData, 'clean-entry');
 
-    // Save to DB
-    const record = await Resume.create({
+    // Save to DB (in same database as user)
+    const { createResume: createResumeDb } = require('../utils/dbConnections');
+    const record = await createResumeDb({
       userId: req.user.id,
       filename: `${name.replace(/\s+/g, '_')}_Resume.pdf`,
       resumeText,
-      atsScore: 75, // Generated resumes start with good score
+      atsScore: 75,
       skills: skills || [],
       analysis: { skillsDetected: skills || [], wordCount: resumeText.split(/\s+/).length },
     });
 
     // Increment usage
-    const User = require('../models/User');
-    await User.findByIdAndUpdate(req.user.id, {
+    const { updateUserById } = require('../utils/dbConnections');
+    await updateUserById(req.user.id, {
       $inc: { 'usage.tailorsThisMonth': 1, 'usage.totalTailors': 1 }
     });
 
@@ -246,7 +254,7 @@ router.post('/modify', auth, checkUsage('tailor'), async (req, res) => {
     let usedFallback = false;
 
     if (resumeId) {
-      const record = await Resume.findOne({ _id: resumeId, userId: req.user.id });
+      const record = await findResumeRecord(resumeId, req.user.id);
 
       if (record?.resumeText && record.resumeText.trim().length > 50) {
         // ✅ Tier 1 — best case: text already stored in DB
@@ -291,8 +299,7 @@ router.post('/modify', auth, checkUsage('tailor'), async (req, res) => {
     const result = await modifyResumeForJob(resumeText, jobTitle, jobDescription, missingSkills);
 
     // Increment tailor usage
-    const User = require('../models/User');
-    await User.findByIdAndUpdate(req.user.id, {
+    await db.updateUserById(req.user.id, {
       $inc: { 'usage.tailorsThisMonth': 1, 'usage.totalTailors': 1 }
     });
 
@@ -356,7 +363,7 @@ router.post('/generate', auth, checkUsage('tailor'), async (req, res) => {
       // Generate from scratch using AI
       let resumeText = '';
       if (resumeId) {
-        const record = await Resume.findOne({ _id: resumeId, userId: req.user.id });
+        const record = await findResumeRecord(resumeId, req.user.id);
         if (record?.resumeText && record.resumeText.trim().length > 50) {
           resumeText = record.resumeText;
         } else if (record?.filepath && fs.existsSync(record.filepath)) {
@@ -392,8 +399,7 @@ router.post('/generate', auth, checkUsage('tailor'), async (req, res) => {
     });
 
     // Increment tailor usage
-    const UserModel = require('../models/User');
-    await UserModel.findByIdAndUpdate(req.user.id, {
+    await db.updateUserById(req.user.id, {
       $inc: { 'usage.tailorsThisMonth': 1, 'usage.totalTailors': 1 }
     });
 
@@ -441,7 +447,7 @@ router.post('/generate-preview', auth, async (req, res) => {
 
     let resumeText = '';
     if (resumeId) {
-      const record = await Resume.findOne({ _id: resumeId, userId: req.user.id });
+      const record = await findResumeRecord(resumeId, req.user.id);
       if (record?.resumeText && record.resumeText.trim().length > 50) {
         resumeText = record.resumeText;
       } else if (record?.filepath && fs.existsSync(record.filepath)) {
@@ -563,7 +569,7 @@ router.post('/cover-letter', auth, checkUsage('coverLetter'), async (req, res) =
 
     let resumeText = '';
     if (resumeId) {
-      const record = await Resume.findOne({ _id: resumeId, userId: req.user.id });
+      const record = await findResumeRecord(resumeId, req.user.id);
       if (record?.resumeText && record.resumeText.trim().length > 50) {
         resumeText = record.resumeText;
       } else if (record?.filepath && fs.existsSync(record.filepath)) {
@@ -579,8 +585,7 @@ router.post('/cover-letter', auth, checkUsage('coverLetter'), async (req, res) =
     const result = await generateCoverLetter(resumeText, jobTitle, jobDescription, companyName, candidateName);
 
     // Increment cover letter usage
-    const UserModel = require('../models/User');
-    await UserModel.findByIdAndUpdate(req.user.id, {
+    await db.updateUserById(req.user.id, {
       $inc: { 'usage.coverLettersThisMonth': 1, 'usage.totalCoverLetters': 1 }
     });
 
@@ -594,11 +599,12 @@ router.post('/cover-letter', auth, checkUsage('coverLetter'), async (req, res) =
 // ─── GET /api/resume/history ──────────────────────────────────────────────────
 router.get('/history', auth, async (req, res) => {
   try {
-    const resumes = await Resume
-      .find({ userId: req.user.id })
-      .sort({ createdAt: -1 })
-      .select('-resumeText') // don't send raw text in list
-      .limit(20);
+    const { findResumesByUserId } = require('../utils/dbConnections');
+    const resumes = await findResumesByUserId(req.user.id, {
+      sort: { createdAt: -1 },
+      select: '-resumeText',
+      limit: 20,
+    });
     res.json({ success: true, resumes });
   } catch (err) {
     res.status(500).json({ error: 'Could not load history' });
@@ -608,10 +614,10 @@ router.get('/history', auth, async (req, res) => {
 // ─── GET /api/resume/:id ──────────────────────────────────────────────────────
 router.get('/:id', auth, async (req, res) => {
   try {
-    const resume = await Resume.findOne({ _id: req.params.id, userId: req.user.id })
-      .select('-resumeText');
-    if (!resume) return res.status(404).json({ error: 'Resume not found' });
-    res.json({ success: true, resume });
+    const { findResumeById } = require('../utils/dbConnections');
+    const result = await findResumeById(req.params.id, req.user.id);
+    if (!result) return res.status(404).json({ error: 'Resume not found' });
+    res.json({ success: true, resume: result.resume });
   } catch (err) {
     res.status(500).json({ error: 'Could not load resume' });
   }
@@ -620,10 +626,10 @@ router.get('/:id', auth, async (req, res) => {
 // ─── DELETE /api/resume/:id ───────────────────────────────────────────────────
 router.delete('/:id', auth, async (req, res) => {
   try {
-    const resume = await Resume.findOne({ _id: req.params.id, userId: req.user.id });
+    const { deleteResume: deleteResumeDb } = require('../utils/dbConnections');
+    const resume = await deleteResumeDb(req.params.id, req.user.id);
     if (!resume) return res.status(404).json({ error: 'Not found' });
     if (resume.filepath && fs.existsSync(resume.filepath)) fs.unlinkSync(resume.filepath);
-    await resume.deleteOne();
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Delete failed' });

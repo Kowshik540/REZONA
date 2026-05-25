@@ -153,7 +153,8 @@ router.post('/verify', auth, async (req, res) => {
     }
 
     // Update user subscription
-    await User.findByIdAndUpdate(req.user.id, {
+    const { updateUserById } = require('../utils/dbConnections');
+    const updatedUser = await updateUserById(req.user.id, {
       plan: planId,
       subscription: {
         razorpaySubscriptionId: razorpay_payment_id,
@@ -167,6 +168,9 @@ router.post('/verify', auth, async (req, res) => {
       'usage.tailorsThisMonth': 0,
       'usage.lastResetDate': now,
     });
+
+    // Replicate updated user to secondary databases
+    try { const { replicateUser } = require('../utils/dbConnections'); replicateUser(updatedUser); } catch(e) {}
 
     res.json({
       success: true,

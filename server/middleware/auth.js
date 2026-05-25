@@ -1,5 +1,7 @@
+// server/middleware/auth.js
+// JWT authentication — searches user across ALL databases
+
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
 
 const auth = async (req, res, next) => {
   try {
@@ -11,13 +13,17 @@ const auth = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select('-password');
+    
+    // Search across all databases for the user
+    const { findUserById } = require('../utils/dbConnections');
+    const result = await findUserById(decoded.id);
 
-    if (!user) {
+    if (!result) {
       return res.status(401).json({ error: 'User not found. Token invalid.' });
     }
 
-    req.user = user;
+    req.user = result.user;
+    req.userDbNum = result.dbNum; // Track which DB this user is in
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {

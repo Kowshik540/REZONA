@@ -174,21 +174,21 @@ app.use((err, req, res, next) => {
 });
 
 // ─── MongoDB Connection ───────────────────────────────────────────────────────
-// Uses MONGODB_URI as primary. If storage fills up, switch to MONGODB_RESUME_URI or MONGODB_OVERFLOW_URI
+// Uses MONGODB_URI as primary. Secondary DBs replicate all data for storage scaling.
 const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI;
 mongoose.connect(MONGO_URI, {
   maxPoolSize: 10,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
 }).then(async () => {
-  logger.info('MongoDB Atlas Connected (Primary)');
+  logger.info('MongoDB Primary Connected');
   
-  // Log available secondary databases
-  if (process.env.MONGODB_RESUME_URI) {
-    logger.info('Secondary DB configured (MONGODB_RESUME_URI) — available for migration');
-  }
-  if (process.env.MONGODB_OVERFLOW_URI) {
-    logger.info('Tertiary DB configured (MONGODB_OVERFLOW_URI) — available for overflow');
+  // Initialize secondary databases for replication
+  try {
+    const { initSecondaryDatabases } = require('./utils/dbConnections');
+    await initSecondaryDatabases();
+  } catch (err) {
+    logger.warn('Secondary DB init skipped: ' + err.message);
   }
 }).catch(err => {
   logger.error('MongoDB connection failed', { error: err.message });
@@ -208,8 +208,9 @@ const server = app.listen(PORT, () => {
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received — shutting down gracefully');
   server.close(async () => {
+    try { const { closeSecondaryDatabases } = require('./utils/dbConnections'); await closeSecondaryDatabases(); } catch(e) {}
     await mongoose.connection.close();
-    logger.info('MongoDB disconnected. Process exiting.');
+    logger.info('All databases disconnected. Process exiting.');
     process.exit(0);
   });
 });
@@ -217,6 +218,7 @@ process.on('SIGTERM', () => {
 process.on('SIGINT', () => {
   logger.info('SIGINT received — shutting down');
   server.close(async () => {
+    try { const { closeSecondaryDatabases } = require('./utils/dbConnections'); await closeSecondaryDatabases(); } catch(e) {}
     await mongoose.connection.close();
     process.exit(0);
   });

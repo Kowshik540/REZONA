@@ -89,7 +89,8 @@ function isSubscriptionActive(user) {
 function checkUsage(type) {
   return async (req, res, next) => {
     try {
-      const user = await User.findById(req.user.id);
+      // Use the user already loaded by auth middleware (searches all DBs)
+      const user = req.user;
       if (!user) return res.status(401).json({ error: 'User not found' });
 
       // Admin bypass — unlimited access (admin plan or admin email)
@@ -159,7 +160,11 @@ function checkUsage(type) {
         user.usage.tailorsThisMonth = 0;
         user.usage.coverLettersThisMonth = 0;
         user.usage.lastResetDate = now;
-        await user.save();
+        try { await user.save(); } catch(e) {
+          // If save fails (e.g. user on different DB), use updateUserById
+          const { updateUserById } = require('../utils/dbConnections');
+          await updateUserById(user._id, { 'usage.scansThisMonth': 0, 'usage.tailorsThisMonth': 0, 'usage.coverLettersThisMonth': 0, 'usage.lastResetDate': now });
+        }
       }
 
       // ─── Check limits by type ──────────────────────────────────────────
@@ -220,7 +225,8 @@ function checkUsage(type) {
 function checkFeature(featureName) {
   return async (req, res, next) => {
     try {
-      const user = await User.findById(req.user.id);
+      // Use the user already loaded by auth middleware
+      const user = req.user;
       if (!user) return res.status(401).json({ error: 'User not found' });
 
       // Admin bypass

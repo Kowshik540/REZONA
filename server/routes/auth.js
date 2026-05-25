@@ -1,4 +1,6 @@
 // server/routes/auth.js
+// Authentication routes — uses distributed DB (users spread across multiple databases)
+
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
@@ -9,11 +11,9 @@ const router = express.Router();
 // Rate limit auth endpoints — 10 attempts per 15 minutes
 const authLimiter = rateLimit({ windowMs: 900000, max: 10, message: 'Too many attempts. Please try again in 15 minutes.' });
 
-// Helper to generate token
 const generateToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-// Input validation helpers
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const nameRegex = /^[a-zA-Z\s'-]+$/;
 
@@ -26,7 +26,6 @@ router.post('/register', authLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Name, email and password are required' });
     }
 
-    // Name validation
     const trimmedName = name.trim();
     if (trimmedName.length < 2 || trimmedName.length > 50) {
       return res.status(400).json({ error: 'Name must be between 2 and 50 characters' });
@@ -34,24 +33,22 @@ router.post('/register', authLimiter, async (req, res) => {
     if (!nameRegex.test(trimmedName)) {
       return res.status(400).json({ error: 'Name can only contain letters, spaces, hyphens, and apostrophes' });
     }
-
-    // Email validation
     if (!emailRegex.test(email)) {
       return res.status(400).json({ error: 'Please enter a valid email address' });
     }
-
-    // Password validation
     if (password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
+    // Check if user exists across ALL databases
+    const { findUserByEmail, createUser } = require('../utils/dbConnections');
+    const existing = await findUserByEmail(email);
+    if (existing) {
       return res.status(400).json({ error: 'User already exists with this email' });
     }
 
-    const user = new User({ name: trimmedName, email, password });
-    await user.save();
+    // Create user in the next available database (round-robin distribution)
+    const { user } = await createUser({ name: trimmedName, email, password });
 
     const token = generateToken(user._id);
     res.status(201).json({
@@ -78,11 +75,14 @@ router.post('/login', authLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
+    // Search across ALL databases for the user
+    const { findUserByEmail } = require('../utils/dbConnections');
+    const result = await findUserByEmail(email);
+    if (!result) {
       return res.status(400).json({ error: 'Invalid email or password' });
     }
 
+    const user = result.user;
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({ error: 'Invalid email or password' });
