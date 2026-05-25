@@ -4,7 +4,6 @@
 
 'use strict';
 
-const PDFDocument = require('pdfkit');
 const axios = require('axios');
 
 // Template configurations
