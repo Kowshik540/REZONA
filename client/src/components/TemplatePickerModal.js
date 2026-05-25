@@ -50,90 +50,77 @@ const ALL_RESUME_TEMPLATES = [
 
 // ─── Build preview HTML from resume data ─────────────────────────────────────
 function buildPreviewHtml(template, resumeData) {
-  const t = template;
   if (!resumeData) return '<p style="padding:40px;color:#888;">Generating preview...</p>';
 
-  const contactParts = [
-    resumeData.email, resumeData.phone, resumeData.location,
-    resumeData.linkedin, resumeData.github
-  ].filter(Boolean);
-
-  const skillsHtml = (resumeData.skills || [])
-    .map(s => `<span class="skill-tag">${s}</span>`).join('');
-
+  const layout = getLayoutType(template.id);
+  const contact = [resumeData.email, resumeData.phone, resumeData.location, resumeData.linkedin, resumeData.github].filter(Boolean);
+  const skills = (resumeData.skills || []).join('  •  ');
   const expHtml = (resumeData.experience || []).map(exp => `
-    <div class="exp-item">
-      <div class="exp-header">
-        <span class="exp-role">${exp.role || ''}</span>
-        ${exp.company ? `<span class="exp-company"> — ${exp.company}</span>` : ''}
+    <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #eee;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+        <span style="font-weight:700;font-size:13px;">${exp.role||''} ${exp.company?'| '+exp.company:''}</span>
+        <span style="font-size:11px;color:#666;">${exp.duration||''}</span>
       </div>
-      ${exp.duration ? `<div class="exp-duration">${exp.duration}</div>` : ''}
-      ${exp.bullets ? `<ul class="exp-bullets">${exp.bullets.map(b => `<li>${b}</li>`).join('')}</ul>` : ''}
-    </div>
-  `).join('');
-
+      ${exp.bullets?`<ul style="margin:6px 0 0 16px;padding:0;">${exp.bullets.map(b=>`<li style="font-size:12px;line-height:1.6;margin-bottom:3px;">${b}</li>`).join('')}</ul>`:''}
+    </div>`).join('');
   const projHtml = (resumeData.projects || []).map(p => `
-    <div class="proj-item">
-      <span class="proj-name">${p.name || ''}</span>
-      ${p.tech ? `<span class="proj-tech">[${p.tech}]</span>` : ''}
-      ${p.description ? `<p class="proj-desc">${p.description}</p>` : ''}
-    </div>
-  `).join('');
-
+    <div style="margin-bottom:10px;">
+      <span style="font-weight:700;font-size:12px;">${p.name||''}</span>
+      ${p.tech?`<span style="font-size:11px;color:#666;"> | ${p.tech}</span>`:''}
+      ${p.description?`<p style="font-size:11.5px;line-height:1.5;margin:3px 0 0 0;color:#333;">${p.description}</p>`:''}
+    </div>`).join('');
   const eduHtml = (resumeData.education || []).map(e => `
-    <div class="edu-item">
-      <div class="edu-degree">${e.degree || ''}</div>
-      <div class="edu-inst">${[e.institution, e.year].filter(Boolean).join(' — ')}</div>
-      ${e.details ? `<div class="edu-details">${e.details}</div>` : ''}
-    </div>
-  `).join('');
+    <div style="margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;"><span style="font-weight:700;font-size:12px;">${e.degree||''}</span><span style="font-size:11px;color:#666;">${e.year||''}</span></div>
+      ${e.institution?`<div style="font-size:11px;color:#555;">${e.institution}</div>`:''}
+      ${e.details?`<div style="font-size:10.5px;color:#777;">${e.details}</div>`:''}
+    </div>`).join('');
 
-  const certHtml = (resumeData.certifications || [])
-    .map(c => `<li>${c}</li>`).join('');
+  // Different header styles based on layout
+  let headerHtml = '';
+  if (layout === 'minimal') {
+    headerHtml = `<div style="text-align:center;padding-bottom:12px;border-bottom:1px solid #000;margin-bottom:16px;">
+      <div style="font-size:22px;font-weight:800;color:#000;">${resumeData.name||''}</div>
+      <div style="font-size:9px;color:#555;margin-top:4px;">${contact.join('  •  ')}</div></div>`;
+  } else if (layout === 'classic') {
+    headerHtml = `<div style="padding-bottom:12px;border-bottom:2px solid #000;margin-bottom:16px;">
+      <div style="font-size:24px;font-weight:800;font-family:Georgia,serif;color:#000;">${resumeData.name||''}</div>
+      <div style="font-size:9px;color:#444;margin-top:4px;">${contact.join('  |  ')}</div></div>`;
+  } else if (layout === 'executive') {
+    headerHtml = `<div style="text-align:center;padding-bottom:14px;margin-bottom:16px;">
+      <div style="font-size:26px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#000;">${resumeData.name||''}</div>
+      <div style="border-top:1px solid #000;margin-top:8px;padding-top:6px;font-size:9px;color:#555;">${contact.join('  •  ')}</div></div>`;
+  } else if (layout === 'student') {
+    headerHtml = `<div style="border-top:3px solid #000;padding-top:10px;margin-bottom:16px;">
+      <div style="font-size:20px;font-weight:800;color:#000;">${resumeData.name||''}</div>
+      <div style="font-size:9px;color:#555;margin-top:3px;">${contact.join('  •  ')}</div></div>`;
+  } else { // modern
+    headerHtml = `<div style="display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;border-bottom:1px solid #000;margin-bottom:16px;">
+      <div style="font-size:20px;font-weight:800;color:#000;">${resumeData.name||''}</div>
+      <div style="font-size:8px;color:#555;text-align:right;">${contact.join(' | ')}</div></div>`;
+  }
+
+  // Section title style varies
+  const secStyle = layout === 'minimal' ? 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #ccc;padding-bottom:4px;margin:14px 0 8px;'
+    : layout === 'classic' ? 'font-size:11px;font-weight:700;text-transform:uppercase;border-bottom:1.5px solid #000;padding-bottom:3px;margin:14px 0 8px;font-family:Georgia,serif;'
+    : layout === 'executive' ? 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin:14px 0 8px;'
+    : layout === 'student' ? 'font-size:10px;font-weight:700;text-transform:uppercase;border-bottom:1px dashed #999;padding-bottom:3px;margin:14px 0 8px;'
+    : 'font-size:10px;font-weight:700;text-transform:uppercase;border-bottom:1px solid #000;padding-bottom:3px;margin:14px 0 8px;';
 
   return `<!DOCTYPE html><html><head><style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', -apple-system, sans-serif; background: #f0f2f5; padding: 24px; }
-    .page { background: ${t.bodyBg}; max-width: 800px; margin: 0 auto; box-shadow: 0 4px 24px rgba(0,0,0,0.12); border-radius: 2px; }
-    .header { background: ${t.headerBg}; color: ${t.headerText}; padding: 36px 40px 28px; }
-    .name { font-size: 28px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.3px; }
-    .contact { font-size: 10px; opacity: 0.85; letter-spacing: 0.02em; }
-    .body { padding: 32px 40px; color: ${t.bodyText}; }
-    .section { margin-bottom: 26px; }
-    .section-title { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; color: ${t.sectionColor}; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid ${t.accentColor}30; }
-    .summary { font-size: 13px; line-height: 1.75; color: ${t.bodyText}; }
-    .skills-wrap { display: flex; flex-wrap: wrap; gap: 7px; }
-    .skill-tag { padding: 4px 11px; border-radius: 4px; font-size: 11.5px; font-weight: 600; background: ${t.accentColor}12; color: ${t.accentColor}; border: 1px solid ${t.accentColor}35; }
-    .exp-item { margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid #f0f0f0; }
-    .exp-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-    .exp-header { display: flex; align-items: baseline; gap: 6px; margin-bottom: 2px; }
-    .exp-role { font-size: 14px; font-weight: 700; color: ${t.bodyText}; }
-    .exp-company { color: ${t.sectionColor}; font-weight: 600; font-size: 13px; }
-    .exp-duration { font-size: 11px; color: #888; margin: 3px 0 8px; }
-    .exp-bullets { padding-left: 18px; margin: 0; }
-    .exp-bullets li { font-size: 12.5px; line-height: 1.7; margin-bottom: 4px; color: ${t.bodyText}; }
-    .proj-item { margin-bottom: 12px; }
-    .proj-name { font-weight: 700; font-size: 13px; color: ${t.bodyText}; }
-    .proj-tech { font-size: 11px; color: #888; margin-left: 8px; }
-    .proj-desc { font-size: 12px; line-height: 1.6; margin-top: 3px; color: #555; }
-    .edu-item { margin-bottom: 12px; }
-    .edu-degree { font-weight: 700; font-size: 13px; color: ${t.bodyText}; }
-    .edu-inst { font-size: 12px; color: #666; margin-top: 2px; }
-    .edu-details { font-size: 11px; color: #888; margin-top: 2px; }
-    @media print { body { background: white; padding: 0; } .page { box-shadow: none; } }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;padding:20px;}
+    .page{background:#fff;max-width:800px;margin:0 auto;padding:40px 44px;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
+    @media print{body{background:#fff;padding:0;}.page{box-shadow:none;padding:30px 40px;}}
   </style></head><body><div class="page">
-    <div class="header">
-      <div class="name">${resumeData.name || 'Candidate'}</div>
-      <div class="contact">${contactParts.join('  •  ')}</div>
-    </div>
-    <div class="body">
-      ${resumeData.summary ? `<div class="section"><div class="section-title">Professional Summary</div><p class="summary">${resumeData.summary}</p></div>` : ''}
-      ${skillsHtml ? `<div class="section"><div class="section-title">Technical Skills</div><div class="skills-wrap">${skillsHtml}</div></div>` : ''}
-      ${expHtml ? `<div class="section"><div class="section-title">Professional Experience</div>${expHtml}</div>` : ''}
-      ${projHtml ? `<div class="section"><div class="section-title">Projects</div>${projHtml}</div>` : ''}
-      ${eduHtml ? `<div class="section"><div class="section-title">Education</div>${eduHtml}</div>` : ''}
-      ${certHtml ? `<div class="section"><div class="section-title">Certifications</div><ul style="padding-left:18px;margin:0;">${certHtml}</ul></div>` : ''}
-    </div>
+    ${headerHtml}
+    ${resumeData.summary?`<div style="${secStyle}">Professional Summary</div><p style="font-size:12px;line-height:1.7;color:#222;margin-bottom:10px;">${resumeData.summary}</p>`:''}
+    ${skills?`<div style="${secStyle}">Technical Skills</div><p style="font-size:11.5px;line-height:1.8;color:#333;">${skills}</p>`:''}
+    ${expHtml?`<div style="${secStyle}">Professional Experience</div>${expHtml}`:''}
+    ${projHtml?`<div style="${secStyle}">Projects</div>${projHtml}`:''}
+    ${eduHtml?`<div style="${secStyle}">Education</div>${eduHtml}`:''}
+    ${resumeData.certifications?.length?`<div style="${secStyle}">Certifications</div><ul style="margin-left:16px;">${resumeData.certifications.map(c=>`<li style="font-size:11.5px;">${c}</li>`).join('')}</ul>`:''}
+    ${resumeData.achievements?.length?`<div style="${secStyle}">Achievements</div><ul style="margin-left:16px;">${resumeData.achievements.map(a=>`<li style="font-size:11.5px;">${a}</li>`).join('')}</ul>`:''}
   </div></body></html>`;
 }
 
