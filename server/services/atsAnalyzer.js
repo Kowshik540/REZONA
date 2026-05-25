@@ -159,12 +159,19 @@ function analyzeHardSkills(resumeText, jobDescription = '') {
   // Find skills in resume
   const resumeSkills = HARD_SKILLS.filter(s => countOccurrences(lower, s) > 0);
 
-  // Find skills in JD
-  const jdSkills = jobDescription ? HARD_SKILLS.filter(s => countOccurrences(jdLower, s) > 0) : [];
+  // Find skills in JD — both from our database AND raw JD keywords
+  const jdSkillsFromDb = jobDescription ? HARD_SKILLS.filter(s => countOccurrences(jdLower, s) > 0) : [];
+  
+  // Also extract important multi-word phrases from JD (only technical/relevant words)
+  const jdWords = jdLower.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 4);
+  const stopWords = new Set(['with','that','this','from','have','been','will','would','could','should','their','about','which','when','what','your','more','also','into','than','them','each','make','like','over','such','these','those','other','after','before','between','through','during','under','above','below','experience','years','strong','ability','looking','seeking','required','preferred','including','working','using','based','knowledge','understanding','skills','team','work','role','position','company','must','able','well','good','great','excellent']);
+  const jdExtraKeywords = [...new Set(jdWords.filter(w => !stopWords.has(w)))].slice(0, 12);
+  
+  const jdSkills = [...new Set([...jdSkillsFromDb, ...jdExtraKeywords])];
 
-  // Match skills
-  const matched = jdSkills.filter(s => resumeSkills.includes(s));
-  const missing = jdSkills.filter(s => !resumeSkills.includes(s));
+  // Match skills — use includes for broader matching
+  const matched = jdSkills.filter(s => lower.includes(s));
+  const missing = jdSkills.filter(s => !lower.includes(s));
 
   // Score based on match rate
   if (jdSkills.length > 0) {
