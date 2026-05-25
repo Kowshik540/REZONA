@@ -374,7 +374,7 @@ router.post('/generate', auth, checkUsage('tailor'), async (req, res) => {
     if (contactDetails.github) resumeData.github = contactDetails.github;
 
     // Build PDF
-    const pdfBuffer = await buildPdf(resumeData, templateId);
+    const pdfBuffer = await buildPdf(resumeData, templateId, req.body.fmtIndex);
 
     // Send PDF as response
     const safeName = (jobTitle || 'resume').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');

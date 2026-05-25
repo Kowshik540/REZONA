@@ -498,11 +498,10 @@ ${resumeText.slice(0, 4500)}
  * Build a PDF buffer from structured resume data + template
  * Returns a Buffer containing the PDF
  */
-function buildPdf(resumeData, templateId) {
+function buildPdf(resumeData, templateId, fmtIndex) {
   const t = TEMPLATES[templateId] || TEMPLATES['clean-entry'];
-  const style = t.style || 'colored';
-  // Map templates to 10 different format layouts
-  const formatNum = getFormatNumber(templateId, style);
+  // fmtIndex from UI takes priority, otherwise use the map
+  const formatNum = fmtIndex || getFormatNumber(templateId);
 
   return new Promise((resolve, reject) => {
     try {
@@ -514,13 +513,9 @@ function buildPdf(resumeData, templateId) {
 
       const W = doc.page.width - 100, L = 50;
       let y = 36;
-      function col(c) { return Array.isArray(c) ? c : [0,0,0]; }
       const contact = [resumeData.phone, resumeData.email, resumeData.location, resumeData.linkedin, resumeData.github].filter(Boolean);
 
-      // ── HEADER by format ──
       y = renderHeader(doc, resumeData, contact, formatNum, t, L, W);
-
-      // ── SECTIONS ──
       renderAllSections(doc, resumeData, formatNum, t, L, W, y);
 
       doc.end();
@@ -528,44 +523,17 @@ function buildPdf(resumeData, templateId) {
   });
 }
 
-function getFormatNumber(templateId, style) {
-  // Every template gets a unique format number (1-10)
-  // This ensures each template produces a visually different PDF
+function getFormatNumber(templateId) {
+  // Single source of truth — each templateId maps to a unique format 1-10
   const map = {
-    'clean-entry': 1,
-    'minimal-white': 7,
-    'harvard-clean': 9,
-    'steel-minimal': 10,
-    'modern-blue': 5,
-    'tech-cyan': 6,
-    'corporate-navy': 10,
-    'ocean-deep': 5,
-    'indigo-night': 6,
-    'slate-professional': 9,
-    'elegant-green': 2,
-    'emerald-classic': 8,
-    'forest-earth': 2,
-    'classic-serif': 8,
-    'wall-street': 2,
-    'teal-modern': 10,
-    'platinum-exec': 7,
-    'copper-vintage': 8,
-    'executive-dark': 9,
-    'midnight-gold': 9,
-    'charcoal-sharp': 10,
-    'obsidian-elite': 7,
-    'crimson-power': 5,
-    'sapphire-royal': 6,
-    'titanium-pro': 1,
-    'amber-prestige': 2,
-    'creative-pink': 6,
-    'arctic-frost': 1,
-    'rose-elegant': 7,
-    'violet-luxe': 5,
-    'aurora-gradient': 8,
-    'ruby-bold': 9,
-    'sunset-warm': 10,
-    'jade-harmony': 2,
+    'clean-entry': 1, 'arctic-frost': 1, 'titanium-pro': 1, 'steel-minimal': 1,
+    'elegant-green': 2, 'wall-street': 2, 'forest-earth': 2, 'amber-prestige': 2, 'jade-harmony': 2,
+    'minimal-white': 3, 'harvard-clean': 3, 'platinum-exec': 3, 'obsidian-elite': 3, 'rose-elegant': 3,
+    'modern-blue': 4, 'ocean-deep': 4, 'indigo-night': 4, 'crimson-power': 4, 'violet-luxe': 4,
+    'executive-dark': 5, 'midnight-gold': 5, 'sapphire-royal': 5, 'charcoal-sharp': 5, 'ruby-bold': 5,
+    'tech-cyan': 6, 'corporate-navy': 6, 'slate-professional': 6, 'teal-modern': 6, 'sunset-warm': 6,
+    'creative-pink': 7, 'aurora-gradient': 7,
+    'classic-serif': 8, 'emerald-classic': 8, 'copper-vintage': 8,
   };
   return map[templateId] || 1;
 }
