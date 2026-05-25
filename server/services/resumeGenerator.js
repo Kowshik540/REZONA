@@ -514,16 +514,18 @@ ${resumeText.slice(0, 4500)}
   return parsed;
 }
 
-// Template-to-format mapping
+// Template-to-format mapping — each template maps to a unique format (1-34)
+// pdfBuilder uses: 1-4=style1, 5-8=style2, 9-12=style3, 13-16=style4, 17-20=style5, 21-24=style6, 25-28=style7, 29-31=style8, 32-34=style9
 const TEMPLATE_FORMAT_MAP = {
-  'clean-entry':1,'arctic-frost':1,'titanium-pro':1,'steel-minimal':1,
-  'elegant-green':2,'wall-street':2,'forest-earth':2,'amber-prestige':2,'jade-harmony':2,
-  'minimal-white':3,'harvard-clean':3,'platinum-exec':3,'obsidian-elite':3,'rose-elegant':3,
-  'modern-blue':4,'ocean-deep':4,'indigo-night':4,'crimson-power':4,'violet-luxe':4,
-  'executive-dark':5,'midnight-gold':5,'sapphire-royal':5,'charcoal-sharp':5,'ruby-bold':5,
-  'tech-cyan':6,'corporate-navy':6,'slate-professional':6,'teal-modern':6,'sunset-warm':6,
-  'creative-pink':7,'aurora-gradient':7,
-  'classic-serif':8,'emerald-classic':8,'copper-vintage':8,
+  'clean-entry':1,'minimal-white':2,'harvard-clean':3,'steel-minimal':4,
+  'modern-blue':5,'tech-cyan':6,'corporate-navy':7,'slate-professional':8,
+  'elegant-green':9,'emerald-classic':10,'forest-earth':11,'wall-street':12,
+  'executive-dark':13,'midnight-gold':14,'charcoal-sharp':15,'obsidian-elite':16,
+  'creative-pink':17,'violet-luxe':18,'aurora-gradient':19,'rose-elegant':20,
+  'arctic-frost':21,'ocean-deep':22,'indigo-night':23,'teal-modern':24,
+  'ruby-bold':25,'sunset-warm':26,'copper-vintage':27,'jade-harmony':28,
+  'sapphire-royal':29,'crimson-power':30,'titanium-pro':31,
+  'classic-serif':32,'amber-prestige':33,'platinum-exec':34,
 };
 
 function buildPdf(resumeData, templateId, fmtIndex) {
