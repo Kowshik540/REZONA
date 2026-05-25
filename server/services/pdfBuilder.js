@@ -25,12 +25,13 @@ async function buildResumePdf(data, fmt) {
 
   try {
     await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    const pdf = await page.pdf({
+    const pdfData = await page.pdf({
       format: 'A4',
       printBackground: true,
       margin: { top: '0', bottom: '0', left: '0', right: '0' }
     });
-    return pdf;
+    // Puppeteer returns Uint8Array — convert to Node Buffer for Express res.send()
+    return Buffer.from(pdfData);
   } finally {
     await page.close();
   }

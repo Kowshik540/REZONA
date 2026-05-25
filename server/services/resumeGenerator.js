@@ -386,11 +386,15 @@ async function generateFullResume(resumeText, jobTitle, jobDescription, template
 - Rewrite experience bullets to emphasize skills/technologies mentioned in the JD
 - Use EXACT phrases from the job description in your bullets
 - The resume should read as if written SPECIFICALLY for this one job posting
-- A recruiter should immediately see this candidate is a PERFECT match for THIS role`
+- A recruiter should immediately see this candidate is a PERFECT match for THIS role
+- The professional summary MUST mention the company name or role title from the JD
+- At least 60% of the skills listed should come directly from the JD requirements
+- Every experience bullet should contain at least one keyword from the JD`
     : `This is a GENERAL optimization. Make the resume strong for any role in the candidate's field.
 - Write a broad professional summary highlighting their strongest skills
 - Keep skills in logical order (languages, frameworks, tools, methodologies)
-- Write impactful bullets that showcase versatility`;
+- Write impactful bullets that showcase versatility
+- Do NOT target any specific company or role — keep it general-purpose`;
 
   const prompt = `You are the world's #1 resume generation engine used by top career services at Harvard, Stanford, and McKinsey. You produce resumes that score 90+ on ATS systems and get candidates interviews at FAANG companies.
 
@@ -487,15 +491,52 @@ ${resumeText.slice(0, 4500)}
 
   let res;
   const { callGroq } = require('../utils/groqClient');
-  const data = await callGroq({
-    model: 'llama-3.3-70b-versatile',
-    messages: [
-      { role: 'system', content: 'You are the world\'s best resume writer. You produce resumes that score 90+ on ATS systems. Every bullet you write is 25-40 words, rich with technical detail, and uses power verbs. You NEVER invent facts but you MAXIMIZE the impact of existing content. You MUST include ALL sections and NEVER truncate. Return ONLY valid JSON.' },
-      { role: 'user', content: prompt },
-    ],
-    max_tokens: 4000,
-    temperature: isRealJD ? 0.6 : 0.4,
-  }, 60000);
+  const systemMessage = isRealJD
+    ? 'You are the world\'s best resume tailoring specialist. You customize resumes to PERFECTLY match specific job descriptions. Every section you write is laser-focused on the target role. You use EXACT keywords from the JD. The resume you produce will score 90+ on ATS systems for THIS specific job. You NEVER invent facts but you AGGRESSIVELY align existing experience to the JD. Return ONLY valid JSON.'
+    : 'You are the world\'s best resume writer. You produce resumes that score 90+ on ATS systems. Every bullet you write is 25-40 words, rich with technical detail, and uses power verbs. You NEVER invent facts but you MAXIMIZE the impact of existing content. You MUST include ALL sections and NEVER truncate. Return ONLY valid JSON.';
+  
+  // Retry once if first attempt fails (AI services can be flaky)
+  let data;
+  let lastErr;
+  
+  // Try with fast 8b model first (higher rate limits on Groq free tier)
+  // Falls back to 70b if 8b produces bad output, but 8b is usually sufficient
+  const models = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile'];
+  
+  for (const model of models) {
+    try {
+      data = await callGroq({
+        model,
+        messages: [
+          { role: 'system', content: systemMessage },
+          { role: 'user', content: prompt },
+        ],
+        max_tokens: 3500,
+        temperature: isRealJD ? 0.6 : 0.4,
+      }, 55000);
+      
+      // Verify the response has actual content
+      const content = data.choices?.[0]?.message?.content || '';
+      if (content.length > 100) {
+        break; // Good response
+      }
+      // Too short — try next model
+      data = null;
+    } catch (e) {
+      lastErr = e;
+      data = null;
+      // If it's a rate limit on this model, try next model
+      if (e.message.includes('overloaded') || e.message.includes('rate limit') || e.message.includes('temporarily')) {
+        continue;
+      }
+      // For other errors, also try next model
+      continue;
+    }
+  }
+  
+  if (!data) {
+    throw lastErr || new Error('AI service unavailable. Please try again.');
+  }
 
   const raw = data.choices?.[0]?.message?.content || '{}';
   const clean = raw.replace(/```json|```/g, '').trim();

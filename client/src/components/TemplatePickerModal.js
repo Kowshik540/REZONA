@@ -49,79 +49,32 @@ const ALL_RESUME_TEMPLATES = [
 ];
 
 // ─── Build preview HTML from resume data ─────────────────────────────────────
+// This is a fallback — the real preview comes from the server's /preview-html endpoint
+// which uses the exact same HTML template engine as the PDF generator
 function buildPreviewHtml(template, resumeData) {
   if (!resumeData) return '<p style="padding:40px;color:#888;">Generating preview...</p>';
-
-  const layout = getLayoutType(template.id);
+  // Simple fallback preview while server HTML loads
   const contact = [resumeData.email, resumeData.phone, resumeData.location, resumeData.linkedin, resumeData.github].filter(Boolean);
-  const skills = (resumeData.skills || []).join('  •  ');
-  const expHtml = (resumeData.experience || []).map(exp => `
-    <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #eee;">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;">
-        <span style="font-weight:700;font-size:13px;">${exp.role||''} ${exp.company?'| '+exp.company:''}</span>
-        <span style="font-size:11px;color:#666;">${exp.duration||''}</span>
-      </div>
-      ${exp.bullets?`<ul style="margin:6px 0 0 16px;padding:0;">${exp.bullets.map(b=>`<li style="font-size:12px;line-height:1.6;margin-bottom:3px;">${b}</li>`).join('')}</ul>`:''}
-    </div>`).join('');
-  const projHtml = (resumeData.projects || []).map(p => `
-    <div style="margin-bottom:10px;">
-      <span style="font-weight:700;font-size:12px;">${p.name||''}</span>
-      ${p.tech?`<span style="font-size:11px;color:#666;"> | ${p.tech}</span>`:''}
-      ${p.description?`<p style="font-size:11.5px;line-height:1.5;margin:3px 0 0 0;color:#333;">${p.description}</p>`:''}
-    </div>`).join('');
-  const eduHtml = (resumeData.education || []).map(e => `
-    <div style="margin-bottom:8px;">
-      <div style="display:flex;justify-content:space-between;"><span style="font-weight:700;font-size:12px;">${e.degree||''}</span><span style="font-size:11px;color:#666;">${e.year||''}</span></div>
-      ${e.institution?`<div style="font-size:11px;color:#555;">${e.institution}</div>`:''}
-      ${e.details?`<div style="font-size:10.5px;color:#777;">${e.details}</div>`:''}
-    </div>`).join('');
-
-  // Different header styles based on layout
-  let headerHtml = '';
-  if (layout === 'minimal') {
-    headerHtml = `<div style="text-align:center;padding-bottom:12px;border-bottom:1px solid #000;margin-bottom:16px;">
-      <div style="font-size:22px;font-weight:800;color:#000;">${resumeData.name||''}</div>
-      <div style="font-size:9px;color:#555;margin-top:4px;">${contact.join('  •  ')}</div></div>`;
-  } else if (layout === 'classic') {
-    headerHtml = `<div style="padding-bottom:12px;border-bottom:2px solid #000;margin-bottom:16px;">
-      <div style="font-size:24px;font-weight:800;font-family:Georgia,serif;color:#000;">${resumeData.name||''}</div>
-      <div style="font-size:9px;color:#444;margin-top:4px;">${contact.join('  |  ')}</div></div>`;
-  } else if (layout === 'executive') {
-    headerHtml = `<div style="text-align:center;padding-bottom:14px;margin-bottom:16px;">
-      <div style="font-size:26px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#000;">${resumeData.name||''}</div>
-      <div style="border-top:1px solid #000;margin-top:8px;padding-top:6px;font-size:9px;color:#555;">${contact.join('  •  ')}</div></div>`;
-  } else if (layout === 'student') {
-    headerHtml = `<div style="border-top:3px solid #000;padding-top:10px;margin-bottom:16px;">
-      <div style="font-size:20px;font-weight:800;color:#000;">${resumeData.name||''}</div>
-      <div style="font-size:9px;color:#555;margin-top:3px;">${contact.join('  •  ')}</div></div>`;
-  } else { // modern
-    headerHtml = `<div style="display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;border-bottom:1px solid #000;margin-bottom:16px;">
-      <div style="font-size:20px;font-weight:800;color:#000;">${resumeData.name||''}</div>
-      <div style="font-size:8px;color:#555;text-align:right;">${contact.join(' | ')}</div></div>`;
-  }
-
-  // Section title style varies
-  const secStyle = layout === 'minimal' ? 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #ccc;padding-bottom:4px;margin:14px 0 8px;'
-    : layout === 'classic' ? 'font-size:11px;font-weight:700;text-transform:uppercase;border-bottom:1.5px solid #000;padding-bottom:3px;margin:14px 0 8px;font-family:Georgia,serif;'
-    : layout === 'executive' ? 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin:14px 0 8px;'
-    : layout === 'student' ? 'font-size:10px;font-weight:700;text-transform:uppercase;border-bottom:1px dashed #999;padding-bottom:3px;margin:14px 0 8px;'
-    : 'font-size:10px;font-weight:700;text-transform:uppercase;border-bottom:1px solid #000;padding-bottom:3px;margin:14px 0 8px;';
-
   return `<!DOCTYPE html><html><head><style>
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;padding:20px;}
-    .page{background:#fff;max-width:800px;margin:0 auto;padding:40px 44px;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
-    @media print{body{background:#fff;padding:0;}.page{box-shadow:none;padding:30px 40px;}}
-  </style></head><body><div class="page">
-    ${headerHtml}
-    ${resumeData.summary?`<div style="${secStyle}">Professional Summary</div><p style="font-size:12px;line-height:1.7;color:#222;margin-bottom:10px;">${resumeData.summary}</p>`:''}
-    ${skills?`<div style="${secStyle}">Technical Skills</div><p style="font-size:11.5px;line-height:1.8;color:#333;">${skills}</p>`:''}
-    ${expHtml?`<div style="${secStyle}">Professional Experience</div>${expHtml}`:''}
-    ${projHtml?`<div style="${secStyle}">Projects</div>${projHtml}`:''}
-    ${eduHtml?`<div style="${secStyle}">Education</div>${eduHtml}`:''}
-    ${resumeData.certifications?.length?`<div style="${secStyle}">Certifications</div><ul style="margin-left:16px;">${resumeData.certifications.map(c=>`<li style="font-size:11.5px;">${c}</li>`).join('')}</ul>`:''}
-    ${resumeData.achievements?.length?`<div style="${secStyle}">Achievements</div><ul style="margin-left:16px;">${resumeData.achievements.map(a=>`<li style="font-size:11.5px;">${a}</li>`).join('')}</ul>`:''}
-  </div></body></html>`;
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:40px 44px;color:#111;font-size:10px;line-height:1.5;}
+    .name{font-size:22px;font-weight:bold;text-align:center;margin-bottom:4px;}
+    .contact{text-align:center;font-size:11px;color:#333;margin-bottom:12px;}
+    .section{margin-top:14px;}
+    .sec-title{font-size:11px;font-weight:bold;text-transform:uppercase;border-bottom:1px solid #000;padding-bottom:2px;margin-bottom:6px;}
+    .bullet{margin-bottom:3px;padding-left:14px;}
+    .role-row{display:flex;justify-content:space-between;margin-bottom:3px;}
+    .role-title{font-weight:bold;font-size:10px;}
+    .role-date{font-size:9px;color:#444;}
+  </style></head><body>
+    <div class="name">${resumeData.name || 'Candidate'}</div>
+    <div class="contact">${contact.join(' • ')}</div>
+    ${resumeData.summary ? `<div class="section"><div class="sec-title">Professional Summary</div><p>${resumeData.summary}</p></div>` : ''}
+    ${resumeData.skills?.length ? `<div class="section"><div class="sec-title">Skills</div><p>${resumeData.skills.join(' • ')}</p></div>` : ''}
+    ${resumeData.experience?.length ? `<div class="section"><div class="sec-title">Experience</div>${resumeData.experience.map(exp => `<div class="role-row"><span class="role-title">${exp.role || ''}${exp.company ? ' | ' + exp.company : ''}</span><span class="role-date">${exp.duration || ''}</span></div>${exp.bullets ? exp.bullets.map(b => `<div class="bullet">• ${b}</div>`).join('') : ''}`).join('')}</div>` : ''}
+    ${resumeData.projects?.length ? `<div class="section"><div class="sec-title">Projects</div>${resumeData.projects.map(p => `<div class="role-row"><span class="role-title">${p.name || ''}${p.tech ? ' | ' + p.tech : ''}</span></div>${p.description ? `<div class="bullet">• ${p.description}</div>` : ''}`).join('')}</div>` : ''}
+    ${resumeData.education?.length ? `<div class="section"><div class="sec-title">Education</div>${resumeData.education.map(e => `<div class="role-row"><span class="role-title">${e.degree || ''}</span><span class="role-date">${e.year || ''}</span></div>${e.institution ? `<div style="font-size:9px;color:#333;">${e.institution}</div>` : ''}`).join('')}</div>` : ''}
+  </body></html>`;
 }
 
 // ─── Template Card Mockup ─────────────────────────────────────────────────────
@@ -331,10 +284,27 @@ const TemplatePickerModal = ({ resumeId, jobTitle, jobDescription, skills, onClo
     return () => window.removeEventListener('keydown', h);
   }, [onClose]);
 
-  // Rebuild preview when template or data changes
+  // Rebuild preview when template or data changes — fetch actual template HTML from server
   useEffect(() => {
     if (resumeData && selectedTemplate) {
+      // Show fallback immediately
       setPreviewHtml(buildPreviewHtml(selectedTemplate, resumeData));
+      // Then fetch the real template HTML from server (matches PDF exactly)
+      const fetchRealPreview = async () => {
+        try {
+          const { data } = await api.post('/resume/preview-html', {
+            resumeData,
+            templateId: selectedId,
+          });
+          if (data.success && data.html) {
+            setPreviewHtml(data.html);
+          }
+        } catch (err) {
+          // Keep fallback preview on error
+          console.warn('Could not fetch template preview:', err.message);
+        }
+      };
+      fetchRealPreview();
     }
   }, [selectedId, resumeData, selectedTemplate]);
 
@@ -362,7 +332,28 @@ const TemplatePickerModal = ({ resumeId, jobTitle, jobDescription, skills, onClo
         contactDetails, // Send user's contact info to server
       };
 
-      const { data } = await api.post('/resume/generate-preview', payload, { timeout: 60000 });
+      // Try up to 3 times with short delays if AI is busy
+      let data = null;
+      let lastErr = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const resp = await api.post('/resume/generate-preview', payload, { timeout: 65000 });
+          data = resp.data;
+          break;
+        } catch (err) {
+          lastErr = err;
+          const status = err.response?.status;
+          // Only retry on 503 (AI busy) or 500 with overload message
+          if (status === 503 || (status === 500 && (err.response?.data?.error || '').includes('overloaded'))) {
+            if (attempt < 2) {
+              await new Promise(r => setTimeout(r, 4000)); // Wait 4 seconds
+              continue;
+            }
+          }
+          throw err; // Non-retryable error
+        }
+      }
+      if (!data) throw lastErr;
 
       if (!data.success) throw new Error(data.error || 'Generation failed');
       
@@ -392,12 +383,26 @@ const TemplatePickerModal = ({ resumeId, jobTitle, jobDescription, skills, onClo
   const handleDownloadPdf = async () => {
     setDownloading(true);
     try {
+      const TEMPLATE_FORMAT_MAP = {
+        'clean-entry':1,'minimal-white':2,'harvard-clean':3,'steel-minimal':4,
+        'modern-blue':5,'tech-cyan':6,'corporate-navy':7,'slate-professional':8,
+        'elegant-green':9,'emerald-classic':10,'forest-earth':11,'wall-street':12,
+        'executive-dark':13,'midnight-gold':14,'charcoal-sharp':15,'obsidian-elite':16,
+        'creative-pink':17,'violet-luxe':18,'aurora-gradient':19,'rose-elegant':20,
+        'arctic-frost':21,'ocean-deep':22,'indigo-night':23,'teal-modern':24,
+        'ruby-bold':25,'sunset-warm':26,'copper-vintage':27,'jade-harmony':28,
+        'sapphire-royal':29,'crimson-power':30,'titanium-pro':31,
+        'classic-serif':32,'amber-prestige':33,'platinum-exec':34,
+      };
+      const fmtIndex = TEMPLATE_FORMAT_MAP[selectedId] || 1;
       const response = await api.post('/resume/generate', {
         resumeId,
         jobTitle: jobTitle || 'ATS-Optimized Resume',
         jobDescription: jobDescription || 'Create a highly ATS-optimized version of this resume. Focus on strong action verbs, quantified achievements, proper section structure, and keyword density. Make it suitable for any software/tech role the candidate is qualified for based on their existing experience.',
         templateId: selectedId,
+        fmtIndex,
         contactDetails,
+        resumeData, // Pass the already-generated data so PDF matches preview exactly
       }, {
         responseType: 'blob',
         timeout: 60000,
@@ -640,7 +645,7 @@ const TemplatePickerModal = ({ resumeId, jobTitle, jobDescription, skills, onClo
                   className="tpicker-iframe"
                   srcDoc={previewHtml}
                   title="Resume Preview"
-                  sandbox="allow-same-origin allow-modals"
+                  sandbox="allow-same-origin"
                 />
               )}
             </div>

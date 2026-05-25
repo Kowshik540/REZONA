@@ -305,7 +305,8 @@ router.post('/modify', auth, checkUsage('tailor'), async (req, res) => {
 
 // ─── POST /api/resume/generate ────────────────────────────────────────────────
 // Generate a full tailored resume PDF using AI + selected template
-// Body: { resumeId, jobTitle, jobDescription, templateId }
+// Body: { resumeId, jobTitle, jobDescription, templateId, fmtIndex, contactDetails, resumeData? }
+// If resumeData is provided (from preview), skip AI generation and use it directly
 router.post('/generate', auth, checkUsage('tailor'), async (req, res) => {
   try {
     const { resumeId, jobTitle, jobDescription, templateId = 'modern-blue', contactDetails = {} } = req.body;
@@ -346,24 +347,30 @@ router.post('/generate', auth, checkUsage('tailor'), async (req, res) => {
       }
     }
 
-    // Get original resume text
-    let resumeText = '';
-    if (resumeId) {
-      const record = await Resume.findOne({ _id: resumeId, userId: req.user.id });
-      if (record?.resumeText && record.resumeText.trim().length > 50) {
-        resumeText = record.resumeText;
-      } else if (record?.filepath && fs.existsSync(record.filepath)) {
-        const pdfData = await pdfParse(fs.readFileSync(record.filepath));
-        resumeText = pdfData.text || '';
+    let resumeData;
+
+    // If resumeData is provided from the preview step, use it directly (no AI call needed)
+    if (req.body.resumeData && req.body.resumeData.name) {
+      resumeData = req.body.resumeData;
+    } else {
+      // Generate from scratch using AI
+      let resumeText = '';
+      if (resumeId) {
+        const record = await Resume.findOne({ _id: resumeId, userId: req.user.id });
+        if (record?.resumeText && record.resumeText.trim().length > 50) {
+          resumeText = record.resumeText;
+        } else if (record?.filepath && fs.existsSync(record.filepath)) {
+          const pdfData = await pdfParse(fs.readFileSync(record.filepath));
+          resumeText = pdfData.text || '';
+        }
       }
-    }
 
-    if (!resumeText || resumeText.trim().length < 50) {
-      return res.status(400).json({ error: 'Could not load resume content. Please re-upload your resume.' });
-    }
+      if (!resumeText || resumeText.trim().length < 50) {
+        return res.status(400).json({ error: 'Could not load resume content. Please re-upload your resume.' });
+      }
 
-    // Generate structured resume data using AI
-    const resumeData = await generateFullResume(resumeText, jobTitle, jobDescription, templateId);
+      resumeData = await generateFullResume(resumeText, jobTitle, jobDescription, templateId);
+    }
 
     // Override with user-provided contact details
     if (contactDetails.name) resumeData.name = contactDetails.name;
@@ -373,11 +380,11 @@ router.post('/generate', auth, checkUsage('tailor'), async (req, res) => {
     if (contactDetails.linkedin) resumeData.linkedin = contactDetails.linkedin;
     if (contactDetails.github) resumeData.github = contactDetails.github;
 
-    // Build PDF
+    // Build PDF using the correct template format
     const pdfBuffer = await buildPdf(resumeData, templateId, req.body.fmtIndex);
 
     // Send PDF as response
-    const safeName = (jobTitle || 'resume').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+    const safeName = (contactDetails.name || jobTitle || 'resume').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="Resume_${safeName}.pdf"`,
@@ -399,7 +406,8 @@ router.post('/generate', auth, checkUsage('tailor'), async (req, res) => {
 
 // ─── POST /api/resume/generate-preview ────────────────────────────────────────
 // Same as generate but returns JSON data for client-side preview
-router.post('/generate-preview', auth, checkUsage('tailor'), async (req, res) => {
+// Does NOT increment usage — only the final PDF download counts
+router.post('/generate-preview', auth, async (req, res) => {
   try {
     const { resumeId, jobTitle, jobDescription, templateId = 'modern-blue' } = req.body;
 
@@ -448,15 +456,50 @@ router.post('/generate-preview', auth, checkUsage('tailor'), async (req, res) =>
 
     const resumeData = await generateFullResume(resumeText, jobTitle, jobDescription, templateId);
 
-    // Increment tailor usage
-    const UserModel = require('../models/User');
-    await UserModel.findByIdAndUpdate(req.user.id, {
-      $inc: { 'usage.tailorsThisMonth': 1, 'usage.totalTailors': 1 }
-    });
-
     res.json({ success: true, resumeData, templateId });
   } catch (err) {
-    console.error('[generate-preview]', err);
+    console.error('[generate-preview]', err.message);
+    // If AI is overloaded, return a helpful message instead of generic 500
+    const msg = err.message || 'Preview generation failed';
+    if (msg.includes('overloaded') || msg.includes('rate limit') || msg.includes('timed out') || msg.includes('temporarily')) {
+      return res.status(503).json({ error: 'AI is processing many requests. Please wait a few seconds and try again.' });
+    }
+    res.status(500).json({ error: msg });
+  }
+});
+
+// ─── POST /api/resume/preview-html ───────────────────────────────────────────
+// Returns the actual HTML that would be used for PDF generation (for live preview)
+// This ensures the preview matches the downloaded PDF exactly
+router.post('/preview-html', auth, async (req, res) => {
+  try {
+    const { resumeData, templateId = 'modern-blue' } = req.body;
+
+    if (!resumeData) {
+      return res.status(400).json({ error: 'resumeData is required' });
+    }
+
+    const { generateHtml } = require('../services/htmlTemplates');
+    
+    // Use the same template-to-format mapping as buildPdf
+    const TEMPLATE_FORMAT_MAP = {
+      'clean-entry':1,'minimal-white':2,'harvard-clean':3,'steel-minimal':4,
+      'modern-blue':5,'tech-cyan':6,'corporate-navy':7,'slate-professional':8,
+      'elegant-green':9,'emerald-classic':10,'forest-earth':11,'wall-street':12,
+      'executive-dark':13,'midnight-gold':14,'charcoal-sharp':15,'obsidian-elite':16,
+      'creative-pink':17,'violet-luxe':18,'aurora-gradient':19,'rose-elegant':20,
+      'arctic-frost':21,'ocean-deep':22,'indigo-night':23,'teal-modern':24,
+      'ruby-bold':25,'sunset-warm':26,'copper-vintage':27,'jade-harmony':28,
+      'sapphire-royal':29,'crimson-power':30,'titanium-pro':31,
+      'classic-serif':32,'amber-prestige':33,'platinum-exec':34,
+    };
+    
+    const fmt = TEMPLATE_FORMAT_MAP[templateId] || 1;
+    const html = generateHtml(resumeData, fmt);
+
+    res.json({ success: true, html });
+  } catch (err) {
+    console.error('[preview-html]', err);
     res.status(500).json({ error: err.message || 'Preview generation failed' });
   }
 });

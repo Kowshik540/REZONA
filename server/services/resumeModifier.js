@@ -75,15 +75,33 @@ ${missingSkills.join(', ') || 'None identified'}
 }`;
 
   try {
-    const data = await callGroq({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        { role: 'system', content: 'You are the world\'s best ATS resume optimizer. You produce resumes that score 85-95 on ATS systems. You NEVER invent facts but you AGGRESSIVELY optimize wording, structure, and keyword placement. Every bullet you write is rich, detailed, and keyword-dense. Return ONLY valid JSON.' },
-        { role: 'user', content: prompt },
-      ],
-      max_tokens: 3000,
-      temperature: 0.6,
-    }, 50000);
+    // Try 8b model first (higher rate limits), fall back to 70b
+    let data;
+    const models = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile'];
+    let lastErr;
+    
+    for (const model of models) {
+      try {
+        data = await callGroq({
+          model,
+          messages: [
+            { role: 'system', content: 'You are the world\'s best ATS resume optimizer. You produce resumes that score 85-95 on ATS systems. You NEVER invent facts but you AGGRESSIVELY optimize wording, structure, and keyword placement. Every bullet you write is rich, detailed, and keyword-dense. Return ONLY valid JSON.' },
+            { role: 'user', content: prompt },
+          ],
+          max_tokens: 2500,
+          temperature: 0.6,
+        }, 50000);
+        
+        if (data.choices?.[0]?.message?.content?.length > 50) break;
+        data = null;
+      } catch (e) {
+        lastErr = e;
+        data = null;
+        continue;
+      }
+    }
+    
+    if (!data) throw lastErr || new Error('AI service unavailable');
 
     const raw = data.choices?.[0]?.message?.content || '{}';
     const clean = raw.replace(/```json|```/g, '').trim();
