@@ -132,6 +132,27 @@ const Pricing = () => {
       return;
     }
 
+    // Check for downgrade on frontend
+    const PLAN_ORDER = { free: 0, starter: 1, pro: 2, growth: 3, elite: 4, exclusive: 5 };
+    if (currentPlan !== 'free' && PLAN_ORDER[planId] < PLAN_ORDER[currentPlan]) {
+      setError(`You cannot downgrade from ${currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} to ${planId.charAt(0).toUpperCase() + planId.slice(1)} while your current plan is active. You can switch to a lower plan after your current subscription expires.`);
+      return;
+    }
+    if (planId === currentPlan) {
+      setError(`You are already on the ${currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} plan.`);
+      return;
+    }
+
+    // Show no-refund confirmation
+    const isUpgrade = currentPlan !== 'free' && PLAN_ORDER[planId] > PLAN_ORDER[currentPlan];
+    const confirmMsg = isUpgrade
+      ? `You are upgrading to ${planId.charAt(0).toUpperCase() + planId.slice(1)}. Your new plan will be activated immediately.\n\n⚠️ IMPORTANT: All payments are final. No refunds will be issued once payment is completed.\n\nDo you want to proceed?`
+      : `You are subscribing to the ${planId.charAt(0).toUpperCase() + planId.slice(1)} plan.\n\n⚠️ IMPORTANT: All payments are final. No refunds will be issued once payment is completed.\n\nDo you want to proceed?`;
+    
+    if (!window.confirm(confirmMsg)) {
+      return;
+    }
+
     setLoading(planId);
     setError('');
 
@@ -174,7 +195,7 @@ const Pricing = () => {
               setTimeout(() => navigate('/dashboard'), 2000);
             }
           } catch (verifyErr) {
-            setError('Payment received but verification failed. Contact support.');
+            setError('Payment received but verification failed. Contact support at kowshikthota43@gmail.com');
           }
         },
         modal: {
@@ -232,6 +253,9 @@ const Pricing = () => {
           {PLANS.map(plan => {
             const price = billing === 'monthly' ? plan.price.monthly : plan.price.yearly;
             const isActive = currentPlan === plan.id;
+            const PLAN_ORDER = { free: 0, starter: 1, pro: 2, growth: 3, elite: 4, exclusive: 5 };
+            const isLowerPlan = currentPlan !== 'free' && PLAN_ORDER[plan.id] < PLAN_ORDER[currentPlan];
+            const isUpgrade = currentPlan !== 'free' && PLAN_ORDER[plan.id] > PLAN_ORDER[currentPlan];
             return (
               <div key={plan.id} style={{
                 background: '#1e1e2e', borderRadius: 12, padding: 28,
@@ -266,17 +290,39 @@ const Pricing = () => {
                   disabled={isActive || loading === plan.id}
                   style={{
                     width: '100%', padding: '12px 0', borderRadius: 8, border: 'none',
-                    background: isActive ? '#374151' : plan.color,
-                    color: '#fff', fontWeight: 700, fontSize: 14, cursor: isActive ? 'default' : 'pointer',
+                    background: isActive ? '#374151' : isLowerPlan ? '#1f2937' : plan.color,
+                    color: isActive ? '#9ca3af' : isLowerPlan ? '#6b7280' : '#fff',
+                    fontWeight: 700, fontSize: 14, cursor: isActive || isLowerPlan ? 'default' : 'pointer',
                     opacity: loading === plan.id ? 0.7 : 1,
                   }}
                 >
-                  {isActive ? '✓ Current Plan' : loading === plan.id ? 'Processing...' : `Subscribe to ${plan.label}`}
+                  {isActive ? '✓ Current Plan' : isLowerPlan ? '🔒 Downgrade Not Allowed' : loading === plan.id ? 'Processing...' : isUpgrade ? `⬆ Upgrade to ${plan.label}` : `Subscribe to ${plan.label}`}
                 </button>
               </div>
             );
           })}
         </div>
+
+        {/* No Refund Policy Notice */}
+        <div style={{ marginTop: 40, padding: '20px 24px', background: '#1e1e2e', borderRadius: 10, border: '1px solid #2d2d3d', textAlign: 'center' }}>
+          <p style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.7 }}>
+            <span style={{ color: '#f59e0b', fontWeight: 700 }}>⚠️ No Refund Policy:</span> All payments are final and non-refundable. Once a subscription is purchased, no refunds will be issued under any circumstances. 
+            By subscribing, you agree to this policy. Please choose your plan carefully.
+          </p>
+          <p style={{ fontSize: 12, color: '#64748b', marginTop: 8 }}>
+            Need help? Contact us at <a href="mailto:kowshikthota43@gmail.com" style={{ color: '#6366f1' }}>kowshikthota43@gmail.com</a>
+          </p>
+        </div>
+
+        {/* Upgrade/Downgrade Info */}
+        {currentPlan !== 'free' && (
+          <div style={{ marginTop: 16, padding: '14px 20px', background: 'rgba(99,102,241,0.08)', borderRadius: 8, border: '1px solid rgba(99,102,241,0.2)', textAlign: 'center' }}>
+            <p style={{ fontSize: 13, color: '#a5b4fc' }}>
+              📋 You are on the <strong>{currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}</strong> plan. 
+              You can upgrade anytime. Downgrades are available after your current plan expires.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

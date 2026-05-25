@@ -41,6 +41,9 @@ const PLANS = {
   },
 };
 
+// Plan tier ordering for upgrade/downgrade detection
+const PLAN_ORDER = { free: 0, starter: 1, pro: 2, growth: 3, elite: 4, exclusive: 5 };
+
 // ─── POST /api/payment/create-order ───────────────────────────────────────────
 // Creates a Razorpay order for one-time payment (subscription activation)
 router.post('/create-order', auth, async (req, res) => {
@@ -56,6 +59,30 @@ router.post('/create-order', auth, async (req, res) => {
 
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
       return res.status(500).json({ error: 'Payment gateway not configured. Contact support.' });
+    }
+
+    // Check for downgrade attempt
+    const user = await User.findById(req.user.id);
+    const currentPlan = user?.plan || 'free';
+    const { isSubscriptionActive } = require('../middleware/planLimits');
+    
+    if (currentPlan !== 'free' && isSubscriptionActive(user)) {
+      const currentTier = PLAN_ORDER[currentPlan] || 0;
+      const requestedTier = PLAN_ORDER[planId] || 0;
+      
+      if (requestedTier < currentTier) {
+        return res.status(400).json({ 
+          error: `You cannot downgrade from ${currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} to ${planId.charAt(0).toUpperCase() + planId.slice(1)} while your current plan is active. You can downgrade after your current plan expires on ${new Date(user.subscription?.currentPeriodEnd).toLocaleDateString()}.`,
+          isDowngrade: true,
+        });
+      }
+      
+      if (requestedTier === currentTier) {
+        return res.status(400).json({ 
+          error: `You are already on the ${currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} plan.`,
+          isSamePlan: true,
+        });
+      }
     }
 
     const plan = PLANS[planId][billing];
