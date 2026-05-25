@@ -118,7 +118,7 @@ async function callGroq(params, timeout = 60000) {
 
       return res.data;
     } catch (err) {
-      if (err.response?.status === 429) {
+      if (err.response?.status === 429 || err.response?.status === 403) {
         const retryAfter = parseInt(err.response.headers?.['retry-after'] || '3600');
         markKeyLimited(key, retryAfter);
         continue;
