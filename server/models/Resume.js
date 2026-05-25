@@ -12,7 +12,7 @@ const ResumeSchema = new mongoose.Schema({
   filename: { type: String, required: true },
   filepath: { type: String },
 
-  // ✅ ADDED: store parsed text so /modify can read it without re-parsing the PDF
+  // Store parsed text so /modify can read it without re-parsing the PDF
   resumeText: { type: String, default: '' },
 
   atsScore: { type: Number, min: 0, max: 100 },

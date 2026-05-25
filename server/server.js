@@ -174,13 +174,22 @@ app.use((err, req, res, next) => {
 });
 
 // ─── MongoDB Connection ───────────────────────────────────────────────────────
+// Uses MONGODB_URI as primary. If storage fills up, switch to MONGODB_RESUME_URI or MONGODB_OVERFLOW_URI
 const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI;
 mongoose.connect(MONGO_URI, {
   maxPoolSize: 10,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
-}).then(() => {
-  logger.info('MongoDB Atlas Connected');
+}).then(async () => {
+  logger.info('MongoDB Atlas Connected (Primary)');
+  
+  // Log available secondary databases
+  if (process.env.MONGODB_RESUME_URI) {
+    logger.info('Secondary DB configured (MONGODB_RESUME_URI) — available for migration');
+  }
+  if (process.env.MONGODB_OVERFLOW_URI) {
+    logger.info('Tertiary DB configured (MONGODB_OVERFLOW_URI) — available for overflow');
+  }
 }).catch(err => {
   logger.error('MongoDB connection failed', { error: err.message });
   process.exit(1);
