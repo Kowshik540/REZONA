@@ -408,6 +408,16 @@ STRONG: "Optimized application performance through implementation of code splitt
 - Add soft skills demonstrated by their experience: collaboration, problem-solving, communication
 - The goal is to MAXIMIZE keyword match rate against the JD while keeping content truthful
 
+=== CONTENT EXPANSION (CRITICAL — fill the full page) ===
+- If the resume has only 1-2 experience entries, write 5-6 DETAILED bullets per role (30-50 words each)
+- If the resume has few skills, expand to 20-25 skills including sub-technologies and related tools
+- If there's no summary, WRITE a powerful 5-sentence summary using facts from the resume
+- If projects are brief, expand each to 3-4 sentences describing features, tech decisions, and scope
+- Add a "Relevant Coursework" line under education if the candidate is a student
+- The final resume MUST have enough content to fill at least 80% of an A4 page
+- NEVER leave the resume looking empty — add context, expand descriptions, include implied skills
+- If the candidate has internships, treat them as full experience entries with detailed bullets
+
 === INTEGRITY RULES ===
 - NEVER invent companies, roles, or projects not in the original
 - NEVER fabricate specific metrics/numbers not in the original
@@ -416,6 +426,7 @@ STRONG: "Optimized application performance through implementation of code splitt
 - You CAN and SHOULD expand on technologies mentioned (if they use React, add Hooks, Redux, Context API)
 - You CAN and SHOULD add implied sub-skills from their tech stack
 - You CAN and SHOULD add JD keywords naturally into bullets where the candidate's experience supports it
+- You CAN add reasonable scope descriptions (e.g., "cross-browser compatible", "responsive design", "RESTful architecture")
 
 === TARGET ROLE ===
 Title: ${jobTitle}

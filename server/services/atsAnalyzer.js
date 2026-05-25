@@ -181,12 +181,12 @@ function analyzeHardSkills(resumeText, jobDescription = '') {
       issues.push('Your hard skills match rate is below 40%. Add relevant skills from the job description where truthful.');
     }
   } else {
-    // No JD provided — give minimal score (like Jobscan, you NEED a JD for real scoring)
-    // Cap at 40% of max since we can't measure match rate without a JD
-    score = Math.min(Math.round(maxScore * 0.4), Math.round(resumeSkills.length * 1.2));
-    if (resumeSkills.length >= 10) passes.push(`${resumeSkills.length} technical skills detected. Paste a job description for accurate match scoring.`);
-    else issues.push(`Only ${resumeSkills.length} technical skills found. Paste a job description to see your real match rate.`);
-    issues.push('No job description provided. Your match rate cannot be calculated without a target job. Paste a JD for accurate ATS scoring.');
+    // No JD provided — score based on skill count and resume quality
+    // More generous than with-JD scoring since we can't penalize for keyword mismatch
+    score = Math.min(Math.round(maxScore * 0.6), Math.round(resumeSkills.length * 1.8));
+    if (resumeSkills.length >= 10) passes.push(`${resumeSkills.length} technical skills detected — strong skill coverage.`);
+    else if (resumeSkills.length >= 5) passes.push(`${resumeSkills.length} technical skills found. Consider adding more relevant skills.`);
+    else issues.push(`Only ${resumeSkills.length} technical skills found. Add more skills to improve your ATS score.`);
   }
 
   // Skill frequency check
@@ -222,9 +222,9 @@ function analyzeSoftSkills(resumeText, jobDescription = '') {
     if (matched.length > 0) passes.push(`${matched.length}/${jdSoft.length} soft skills matched.`);
     if (missing.length > 0) issues.push(`Missing soft skills: ${missing.slice(0, 5).join(', ')}`);
   } else {
-    score = Math.min(Math.round(maxScore * 0.35), resumeSoft.length * 2);
+    score = Math.min(Math.round(maxScore * 0.5), resumeSoft.length * 3);
     if (resumeSoft.length >= 3) passes.push(`${resumeSoft.length} soft skills demonstrated.`);
-    else issues.push('Add more soft skills naturally in your experience bullets (e.g., collaboration, leadership).');
+    else issues.push('Add soft skills naturally in your experience (collaboration, leadership, problem-solving).');
   }
 
   return { score: Math.min(maxScore, score), maxScore, issues, passes, matched, missing, category: 'Soft Skills' };
