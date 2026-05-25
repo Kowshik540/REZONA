@@ -428,9 +428,18 @@ STRONG: "Optimized application performance through implementation of code splitt
 - You CAN and SHOULD add JD keywords naturally into bullets where the candidate's experience supports it
 - You CAN add reasonable scope descriptions (e.g., "cross-browser compatible", "responsive design", "RESTful architecture")
 
-=== TARGET ROLE ===
+=== TARGET ROLE (CRITICAL — tailor everything to this) ===
 Title: ${jobTitle}
-Description: ${jobDescription.slice(0, 2000)}
+Job Description: ${jobDescription.slice(0, 2000)}
+
+TAILORING INSTRUCTIONS:
+- Read the job description above CAREFULLY
+- Your summary MUST mention the target role title and key requirements from the JD
+- Your skills section MUST prioritize skills mentioned in the JD (put them first)
+- Your experience bullets MUST use keywords and phrases from the JD
+- If the JD mentions specific technologies, frameworks, or methodologies — include them in bullets where the candidate's experience supports it
+- The resume should read as if it was WRITTEN SPECIFICALLY for this exact job posting
+- A recruiter reading this resume should immediately see the candidate is a strong match for THIS specific role
 
 === CANDIDATE'S ORIGINAL RESUME ===
 ${resumeText.slice(0, 4500)}
