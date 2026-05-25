@@ -1,112 +1,89 @@
 // server/services/resumeModifier.js
-// Elite ATS Resume Tailoring — preserves truth, maximizes ATS score
-// Uses Groq (Llama 3.3 70B) API
+// Elite ATS Resume Tailoring Engine — Maximum optimization while preserving truth
 
-const axios = require('axios');
+const { callGroq } = require('../utils/groqClient');
 
-/**
- * Tailor a resume to match a specific job description
- * 
- * RULES:
- * - NEVER invent projects, companies, skills, achievements, or metrics
- * - NEVER create fake numbers or percentages
- * - NEVER change dates or education facts
- * - ONLY improve wording, structure, formatting, and keyword alignment
- * - Preserve ALL factual information from the original resume
- * - If no metrics exist in original, improve clarity and impact WITHOUT inventing metrics
- */
 async function modifyResumeForJob(resumeText, jobTitle, jobDescription, missingSkills = []) {
   if (!process.env.XAI_API_KEY) {
     throw new Error('XAI_API_KEY not set in .env');
   }
 
-  const prompt = `You are an elite ATS Resume Analyzer and Resume Tailoring Assistant used by recruiters, resume writers, and hiring platforms.
+  const prompt = `You are the world's #1 ATS Resume Optimization Engine, used by career coaches at McKinsey, Google, and Goldman Sachs. Your optimized resumes consistently score 85-95 on ATS systems.
 
-YOUR TASK: Analyze the candidate's resume against the job description and produce an optimized, ATS-friendly version.
+=== YOUR MISSION ===
+Take this candidate's resume and TRANSFORM it for the target role. Make it so compelling that both ATS algorithms AND human recruiters immediately shortlist it.
 
-=== ABSOLUTE RULES (NEVER BREAK THESE) ===
-1. NEVER invent projects that don't exist in the original resume
-2. NEVER invent companies or roles
-3. NEVER invent skills the candidate doesn't have
-4. NEVER invent achievements or create fake metrics
-5. NEVER change dates or education facts
-6. NEVER add percentages or numbers that aren't in the original
-7. PRESERVE all factual information exactly as-is
-8. ONLY improve wording, structure, formatting, and ATS keyword alignment
+=== WHAT YOU MUST DO ===
+1. REWRITE the professional summary (4-5 powerful sentences) — weave in exact JD keywords naturally
+2. REORGANIZE skills to front-load JD-matching ones
+3. TRANSFORM every experience bullet using the STAR method: Situation → Task → Action → Result
+4. INJECT exact phrases from the JD into bullets where the candidate has relevant experience
+5. ADD implied technical sub-skills (React → React.js, Hooks, Context API, Component Architecture)
+6. EXPAND short bullets into rich, detailed achievements (minimum 20 words per bullet)
+7. USE power verbs: Spearheaded, Architected, Orchestrated, Pioneered, Streamlined, Accelerated
 
-=== BULLET ENHANCEMENT RULES ===
-If the original has metrics, keep them and improve the wording:
-  Original: "Reduced load time by 30%"
-  Improved: "Optimized application performance, reducing page load time by 30% through code splitting and lazy loading"
+=== WHAT YOU MUST NEVER DO ===
+- NEVER invent companies, roles, or projects that don't exist
+- NEVER fabricate metrics/percentages not in the original
+- NEVER add skills completely unrelated to their background
+- If original has "reduced load time by 30%" → KEEP the 30%
+- If original has NO metric → improve wording WITHOUT inventing numbers
 
-If the original has NO metrics, improve clarity WITHOUT inventing numbers:
-  Original: "Worked on frontend"
-  Improved: "Developed responsive frontend components using React, improving user interface consistency and cross-browser compatibility"
-  
-  WRONG (inventing metrics): "Developed frontend reducing load time by 25%" ← DO NOT DO THIS
+=== ADVANCED OPTIMIZATION TECHNIQUES ===
+- Mirror the JD's exact terminology (if JD says "cross-functional collaboration" use that exact phrase)
+- Front-load each bullet with the most impactful word
+- Include industry-standard acronyms with expansions: "CI/CD (Continuous Integration/Continuous Deployment)"
+- Group skills by category: Languages | Frameworks | Cloud & DevOps | Databases | Tools
+- Ensure keyword density of 2-3% for top 5 JD keywords
+- Use present tense for current role, past tense for previous roles
 
-=== ATS OPTIMIZATION RULES ===
-- Match keywords from the JD naturally in context
-- Use standard section titles: SUMMARY, SKILLS, EXPERIENCE, PROJECTS, EDUCATION, CERTIFICATIONS
-- Use bullet points with action verbs
-- Convert weak bullets into: [Action Verb] + [Task/Context] + [Impact/Result]
-- Use strong action verbs: Developed, Architected, Implemented, Optimized, Designed, Led, Deployed
-- Include both acronym and full term where natural: "Amazon Web Services (AWS)"
-- Prioritize hard skills from the JD
-- Keep content human-readable, avoid keyword stuffing
-
-=== TARGET JOB ===
+=== TARGET ROLE ===
 Title: ${jobTitle}
-Description: ${jobDescription.slice(0, 2500)}
 
-=== CANDIDATE'S CURRENT RESUME (from uploaded PDF) ===
+=== JOB DESCRIPTION (analyze every requirement) ===
+${jobDescription.slice(0, 3000)}
+
+=== CANDIDATE'S CURRENT RESUME ===
 ${resumeText.slice(0, 4000)}
 
-=== KEYWORDS MISSING FROM RESUME (found in JD) ===
+=== MISSING KEYWORDS (from JD, not in resume) ===
 ${missingSkills.join(', ') || 'None identified'}
 
-=== YOUR OUTPUT ===
-Produce a tailored version that:
-1. Rewrites the professional summary to align with the target role (using ONLY facts from the resume)
-2. Suggests skills to highlight (only skills the candidate actually has or closely related ones)
-3. Improves experience bullets (better wording, NOT fake metrics)
-4. Identifies which JD keywords can be naturally incorporated
-
-Return ONLY valid JSON:
+=== OUTPUT FORMAT (JSON only) ===
 {
-  "professionalSummary": "Rewritten 3-4 sentence summary using ONLY facts from the resume, aligned to target role",
-  "skillsToAdd": ["skills from JD that the candidate likely has based on their experience"],
+  "professionalSummary": "4-5 sentence POWERFUL summary. Start with years of experience + core expertise. Include 3-4 exact JD keywords. End with a value proposition for this specific role.",
+  "skillsToAdd": ["skills the candidate likely has based on their tech stack that match the JD"],
   "skillCategories": {
-    "Languages": ["from resume"],
-    "Frameworks": ["from resume"],
+    "Languages": ["from resume, JD-relevant first"],
+    "Frameworks & Libraries": ["from resume"],
     "Cloud & DevOps": ["from resume"],
-    "Tools": ["from resume"],
-    "Methodologies": ["from resume"]
+    "Databases": ["from resume"],
+    "Tools & Platforms": ["from resume"],
+    "Methodologies": ["Agile, Scrum, etc from resume"]
   },
   "experienceBullets": [
     {
-      "context": "Role/Company from their actual resume",
-      "original": "The actual original bullet from their resume",
-      "improved": "Better wording with action verb + context + impact (NO invented metrics)"
+      "context": "Role | Company",
+      "original": "the actual original bullet",
+      "improved": "TRANSFORMED bullet: Power verb + specific task + technology used + impact/scope (20-40 words minimum)"
     }
   ],
-  "changes": ["Description of each improvement made"],
-  "atsImprovementEstimate": 12,
-  "keywordsInjected": ["JD keywords naturally incorporated"],
-  "atsConstraintsApplied": ["What was optimized"]
+  "changes": ["Specific optimization made and why it improves ATS score"],
+  "atsImprovementEstimate": 18,
+  "keywordsInjected": ["exact JD phrases incorporated into the resume"],
+  "atsConstraintsApplied": ["optimization technique applied"]
 }`;
 
   try {
-    const { callGroq } = require('../utils/groqClient');
     const data = await callGroq({
       model: 'llama-3.3-70b-versatile',
       messages: [
-        { role: 'system', content: 'You are an elite ATS resume optimization expert. You NEVER invent facts, metrics, projects, or companies. You ONLY improve wording and keyword alignment using the candidate\'s actual data. Return ONLY valid JSON, no markdown fences.' },
+        { role: 'system', content: 'You are the world\'s best ATS resume optimizer. You produce resumes that score 85-95 on ATS systems. You NEVER invent facts but you AGGRESSIVELY optimize wording, structure, and keyword placement. Every bullet you write is rich, detailed, and keyword-dense. Return ONLY valid JSON.' },
         { role: 'user', content: prompt },
       ],
-      max_tokens: 2500,
-      temperature: 0.5,
-    }, 45000);
+      max_tokens: 3000,
+      temperature: 0.6,
+    }, 50000);
 
     const raw = data.choices?.[0]?.message?.content || '{}';
     const clean = raw.replace(/```json|```/g, '').trim();
@@ -123,17 +100,8 @@ Return ONLY valid JSON:
       atsConstraintsApplied:  result.atsConstraintsApplied  || [],
     };
   } catch (err) {
-    if (err.response?.status === 429) {
-      const retryAfter = err.response?.headers?.['retry-after'];
-      const minutes = retryAfter ? Math.ceil(parseInt(retryAfter) / 60) : 'a few';
-      throw new Error(`AI service rate limit reached. Please try again in ${minutes} minutes.`);
-    }
-    if (err.response) {
-      console.error('[resumeModifier] API error:', err.response.status, JSON.stringify(err.response.data));
-    } else {
-      console.error('[resumeModifier]', err.message);
-    }
-    throw new Error('Resume modification failed: ' + (err.response?.data?.error?.message || err.message));
+    console.error('[resumeModifier]', err.message);
+    throw new Error(err.message || 'Resume modification failed');
   }
 }
 
