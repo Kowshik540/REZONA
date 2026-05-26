@@ -75,9 +75,9 @@ ${missingSkills.join(', ') || 'None identified'}
 }`;
 
   try {
-    // Try 8b model first (higher rate limits), fall back to 70b
+    // Try 70b first (better quality), fall back to 8b on rate limits
     let data;
-    const models = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile'];
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     let lastErr;
     
     for (const model of models) {

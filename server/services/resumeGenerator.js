@@ -499,19 +499,22 @@ ${resumeText.slice(0, 4500)}
   let data;
   let lastErr;
   
-  // Try with fast 8b model first (higher rate limits on Groq free tier)
-  // Falls back to 70b if 8b produces bad output, but 8b is usually sufficient
-  const models = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile'];
+  // Try 70b first (better quality), fall back to 8b on rate limits
+  const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
   
   for (const model of models) {
     try {
+      // Use shorter prompt for 8b model to avoid truncation
+      const maxTokens = model.includes('8b') ? 3000 : 3500;
+      const userPrompt = model.includes('8b') ? prompt.slice(0, 6000) : prompt;
+      
       data = await callGroq({
         model,
         messages: [
           { role: 'system', content: systemMessage },
-          { role: 'user', content: prompt },
+          { role: 'user', content: userPrompt },
         ],
-        max_tokens: 3500,
+        max_tokens: maxTokens,
         temperature: isRealJD ? 0.6 : 0.4,
       }, 55000);
       
@@ -546,17 +549,25 @@ ${resumeText.slice(0, 4500)}
   try {
     parsed = JSON.parse(clean);
   } catch (e) {
-    // Try to fix truncated JSON by closing open arrays/objects
+    // Aggressive JSON repair for truncated output
     let fixed = clean;
-    const openBraces = (fixed.match(/\{/g) || []).length;
-    const closeBraces = (fixed.match(/\}/g) || []).length;
+    
+    // Remove trailing incomplete key-value pairs
+    fixed = fixed.replace(/,\s*"[^"]*"?\s*:?\s*"?[^"]*$/, '');
+    fixed = fixed.replace(/,\s*$/, '');
+    
+    // Fix unclosed strings
+    const quoteCount = (fixed.match(/"/g) || []).length;
+    if (quoteCount % 2 !== 0) {
+      fixed += '"';
+    }
+    
+    // Close open brackets and braces
     const openBrackets = (fixed.match(/\[/g) || []).length;
     const closeBrackets = (fixed.match(/\]/g) || []).length;
+    const openBraces = (fixed.match(/\{/g) || []).length;
+    const closeBraces = (fixed.match(/\}/g) || []).length;
     
-    fixed = fixed.replace(/,\s*$/, '');
-    if (fixed.match(/"[^"]*$/)) {
-      fixed = fixed.replace(/"[^"]*$/, '""');
-    }
     for (let i = 0; i < openBrackets - closeBrackets; i++) fixed += ']';
     for (let i = 0; i < openBraces - closeBraces; i++) fixed += '}';
     
@@ -564,10 +575,34 @@ ${resumeText.slice(0, 4500)}
       parsed = JSON.parse(fixed);
       console.log('[resumeGenerator] Fixed truncated JSON successfully');
     } catch (e2) {
-      console.error('[resumeGenerator] Could not parse AI response:', e2.message);
-      throw new Error('AI generated invalid resume data. Please try again.');
+      // Last resort: try to extract partial JSON object
+      try {
+        // Find the last complete property and close the object
+        const lastGoodComma = fixed.lastIndexOf('",');
+        if (lastGoodComma > 50) {
+          let partial = fixed.slice(0, lastGoodComma + 1);
+          const ob = (partial.match(/\[/g) || []).length - (partial.match(/\]/g) || []).length;
+          const oc = (partial.match(/\{/g) || []).length - (partial.match(/\}/g) || []).length;
+          for (let i = 0; i < ob; i++) partial += ']';
+          for (let i = 0; i < oc; i++) partial += '}';
+          parsed = JSON.parse(partial);
+          console.log('[resumeGenerator] Recovered partial JSON');
+        } else {
+          throw e2;
+        }
+      } catch (e3) {
+        console.error('[resumeGenerator] Could not parse AI response. Raw length:', raw.length);
+        console.error('[resumeGenerator] First 200 chars:', raw.slice(0, 200));
+        throw new Error('Resume generation failed — AI output was incomplete. Please try again.');
+      }
     }
   }
+  
+  // Ensure required fields exist
+  if (!parsed.name) parsed.name = 'Candidate';
+  if (!parsed.skills) parsed.skills = [];
+  if (!parsed.experience) parsed.experience = [];
+  if (!parsed.education) parsed.education = [];
   
   return parsed;
 }
